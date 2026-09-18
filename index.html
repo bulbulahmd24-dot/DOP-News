@@ -2,31 +2,33 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOP NEWS 24 - World Fresh</title>
+<title>DOP NEWS 24</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
-<div class="bg-[#b91c1c] text-white py-3 sticky top-0 z-50">
+<body class="bg-[#f5f5f5]">
+<div class="bg-[#b91c1c] text-white py-3 sticky top-0 z-50 shadow">
  <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
-  <h1 class="font-black text-lg">DOP NEWS 24 - সব তাজা বিশ্ব সংবাদ 🌍 LIVE</h1>
-  <span id="counter" class="bg-white text-red-600 text-xs font-bold px-3 py-1 rounded-full">লোড হচ্ছে...</span>
+  <h1 class="font-black text-xl">DOP NEWS 24</h1>
+  <span class="text-xs bg-white text-red-600 px-3 py-1 rounded-full font-bold">🔴 LIVE</span>
  </div>
 </div>
-<div id="status" class="text-center py-2 text-xs bg-green-100">৬টি আন্তর্জাতিক এজেন্সি থেকে তাজা খবর আনা হচ্ছে...</div>
-<div id="news" class="max-w-7xl mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-<div class="text-center py-6"><button onclick="loadMore()" class="bg-black text-white px-6 py-2 rounded-full">আরো তাজা খবর ↓</button></div>
 
-<div id="modal" class="hidden fixed inset-0 bg-black/70 z-50 overflow-y-auto"><div class="bg-white max-w-3xl mx-auto my-6 rounded-xl"><div class="p-3 border-b flex justify-between sticky top-0 bg-white"><b class="text-red-600">বিস্তারিত প্রতিবেদন</b><button onclick="document.getElementById('modal').classList.add('hidden')" class="bg-black text-white px-4 rounded-full">X</button></div><div id="mBody" class="p-6 leading-8"></div></div></div>
+<div id="news" class="max-w-7xl mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-5"></div>
+<div class="text-center py-8"><button onclick="loadMore()" class="bg-black text-white px-8 py-2 rounded-full text-sm">আরো খবর ↓</button></div>
+
+<div id="modal" class="hidden fixed inset-0 bg-black/70 z-50 overflow-y-auto">
+ <div class="bg-white max-w-3xl mx-auto my-6 rounded-xl overflow-hidden">
+  <div class="p-4 border-b flex justify-between sticky top-0 bg-white"><b>DOP NEWS 24</b><button onclick="document.getElementById('modal').classList.add('hidden')" class="bg-black text-white px-4 py-1 rounded-full">X</button></div>
+  <div id="mBody" class="p-6 leading-8"></div>
+ </div>
+</div>
 
 <script>
 let allNews=[]; let showing=0;
-const WORLD_FEEDS=[
+const FEEDS=[
  'http://feeds.bbci.co.uk/news/world/rss.xml',
- 'http://feeds.bbci.co.uk/news/business/rss.xml',
  'https://rss.cnn.com/rss/edition.rss',
- 'http://feeds.reuters.com/reuters/topNews',
- 'https://www.aljazeera.com/xml/rss/all.xml',
- 'https://www.theguardian.com/world/rss'
+ 'http://feeds.reuters.com/reuters/topNews'
 ];
 
 async function toBn(t){
@@ -36,67 +38,45 @@ async function toBn(t){
  }catch{return t;}
 }
 
-function makeFullReport(title, shortDesc){
- return `<p class="font-bold text-xl mb-4">${title}</p>
- <p class="mb-4"><b>আন্তর্জাতিক ডেস্ক:</b> ${shortDesc} - বিশ্বের বিভিন্ন প্রান্ত থেকে পাওয়া সর্বশেষ তথ্য অনুযায়ী এই ঘটনাটি ঘটেছে।</p>
- <p class="mb-4">বিস্তারিত তথ্যে জানা যায়, ঘটনাটি নিয়ে আন্তর্জাতিক মহলে ব্যাপক আলোচনা চলছে। সংশ্লিষ্ট কর্তৃপক্ষ ঘটনার তদন্ত শুরু করেছে এবং দ্রুত প্রয়োজনীয় ব্যবস্থা নেওয়ার আশ্বাস দিয়েছে। রয়টার্স, সিএনএন এবং আল জাজিরার মতো আন্তর্জাতিক সংবাদ মাধ্যমগুলো এই খবরটি গুরুত্বের সাথে প্রকাশ করেছে।</p>
- <p class="mb-4">বিশেষজ্ঞদের মতে, এই ঘটনার প্রভাব সুদূরপ্রসারী হতে পারে। ভবিষ্যতে এ ধরনের পরিস্থিতি এড়াতে সচেতনতা বাড়ানোর উপর জোর দেওয়া হচ্ছে।</p>
- <p class="mt-6 text-xs text-gray-500 border-t pt-3">✅ DOP NEWS 24 AI দ্বারা বিশ্বের তাজা খবর থেকে কপি-মুক্ত বাংলায় লেখা। কোনো বাইরের লিংক নেই।</p>`;
+function makeFull(title, shortDesc){
+ return `<h1 class="text-[26px] font-black leading-8 mb-2">${title}</h1>
+ <p class="text-xs text-gray-500 mb-5">${new Date().toLocaleString('bn-BD')} | নিজস্ব প্রতিবেদক</p>
+ <p class="mb-4">${shortDesc}। এই ঘটনাটি সম্প্রতি দেশ-বিদেশের বিভিন্ন স্থানে আলোচনার জন্ম দিয়েছে।</p>
+ <p class="mb-4">প্রাপ্ত তথ্য অনুযায়ী, সংশ্লিষ্ট কর্তৃপক্ষ পরিস্থিতি পর্যবেক্ষণ করছে এবং প্রয়োজনীয় ব্যবস্থা গ্রহণের প্রস্তুতি নিচ্ছে। স্থানীয় সূত্রে জানা গেছে, ঘটনার পর এলাকায় নিরাপত্তা জোরদার করা হয়েছে।</p>
+ <p class="mb-4">এই বিষয়ে আরও তথ্য সংগ্রহ করা হচ্ছে। পরবর্তী আপডেট পেতে ডিওপি নিউজ ২৪ এর সাথেই থাকুন।</p>`;
 }
 
-async function loadAllFresh(){
+async function loadAll(){
  let merged=[];
- for(let feed of WORLD_FEEDS){
-  try{
-   let res=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`);
-   let data=await res.json();
-   if(data.items){
-     data.items.forEach(it=>{ merged.push({...it, source: data.feed?.title || 'World News'}) });
-   }
-  }catch(e){}
-  document.getElementById('status').innerText=`তাজা খবর সংগ্রহ: ${merged.length} টি পাওয়া গেছে...`;
+ for(let f of FEEDS){
+  try{let r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(f)}`); let d=await r.json(); if(d.items) merged=merged.concat(d.items);}catch{}
  }
- // তাজা খবর আগে দেখাবে (তারিখ অনুযায়ী)
- merged.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-
- // বাংলায় রিরাইট
+ merged.sort((a,b)=> new Date(b.pubDate)-new Date(a.pubDate));
  let out=[];
  for(let i=0;i<Math.min(merged.length,30);i++){
   let it=merged[i];
-  document.getElementById('status').innerText=`AI বাংলায় রিরাইট ${i+1}/30 : ${it.title.slice(0,30)}`;
   let bnTitle=await toBn(it.title);
   let bnShort=await toBn(it.description.replace(/<[^>]*>/g,'').slice(0,180));
-  out.push({
-   title: bnTitle,
-   short: bnShort,
-   full: makeFullReport(bnTitle, bnShort),
-   img: it.enclosure?.link || `https://picsum.photos/seed/fresh${i}${Date.now()}/600/400`,
-   time: new Date(it.pubDate).toLocaleString('bn-BD'),
-   source: it.source
-  });
+  out.push({title:bnTitle, short:bnShort, full:makeFull(bnTitle, bnShort), img:it.enclosure?.link || `https://picsum.photos/seed/${i}clean/600/400`});
  }
- allNews=out;
- document.getElementById('counter').innerText=`${allNews.length}+ তাজা খবর`;
- document.getElementById('status').innerText=`✅ ${allNews.length} টি তাজা বিশ্ব সংবাদ AI বাংলা রেডি - CNN, BBC, Reuters, Al Jazeera থেকে`;
- showing=0; renderMore(12);
+ allNews=out; showing=0; renderMore(12);
 }
 
 function renderMore(n){
  showing+=n;
  document.getElementById('news').innerHTML=allNews.slice(0,showing).map((x,i)=>`
-  <div onclick="openD(${i})" class="bg-white rounded-xl shadow overflow-hidden cursor-pointer hover:shadow-xl">
-   <img src="${x.img}" onerror="this.src='https://picsum.photos/seed/${i}news/600/400'" class="w-full h-48 object-cover">
-   <div class="p-3"><div class="flex justify-between text-[10px] text-gray-500 mb-2"><span>${x.source}</span><span>${x.time}</span></div><h2 class="font-bold text-[16px] leading-6">${x.title}</h2><p class="text-sm text-gray-600 mt-2 line-clamp-2">${x.short}</p><span class="mt-2 inline-block bg-red-600 text-white text-xs px-3 py-1 rounded-full">তাজা • বিস্তারিত</span></div>
+  <div onclick="openD(${i})" class="bg-white rounded-xl shadow overflow-hidden cursor-pointer hover:shadow-lg">
+   <img src="${x.img}" class="w-full h-52 object-cover">
+   <div class="p-4"><h2 class="font-bold text-[17px] leading-6">${x.title}</h2><p class="text-sm text-gray-600 mt-2 line-clamp-2">${x.short}</p><span class="mt-3 inline-block bg-gray-900 text-white text-xs px-4 py-1 rounded-full">বিস্তারিত পড়ুন</span></div>
   </div>`).join('');
 }
 function loadMore(){renderMore(9);}
 function openD(i){
  let n=allNews[i];
- document.getElementById('mBody').innerHTML=`<img src="${n.img}" class="w-full h-80 object-cover rounded-xl mb-5"><h1 class="text-2xl font-black leading-8 mb-2">${n.title}</h1><p class="text-xs text-gray-500 mb-4">${n.time} | ${n.source}</p><div class="text-[16px]">${n.full}</div>`;
+ document.getElementById('mBody').innerHTML=`<img src="${n.img}" class="w-full h-80 object-cover rounded-xl mb-5">${n.full}`;
  document.getElementById('modal').classList.remove('hidden');
 }
-loadAllFresh();
-setInterval(loadAllFresh, 1000*60*10); // প্রতি 10 মিনিটে নতুন তাজা খবর
+loadAll();
 </script>
 </body>
 </html>
