@@ -1,37 +1,32 @@
 <!DOCTYPE html>
-<html lang="bn"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - DOP News AI Bot</title>
+<html lang="bn">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOP News 24</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-900 text-white p-6">
-<div class="max-w-xl mx-auto bg-gray-800 p-6 rounded-xl">
-<h1 class="text-xl font-bold mb-4">🤖 DOP News - AI Auto Bot</h1>
-<button id="btn" class="w-full bg-red-600 py-3 rounded-lg font-bold">AI দিয়ে অটো নিউজ সংগ্রহ করো</button>
-<div id="log" class="mt-4 text-sm bg-black p-3 rounded h-64 overflow-auto"></div>
+<body class="bg-gray-100">
+<header class="bg-red-600 text-white p-4 text-center font-bold text-2xl">DOP NEWS 24 - AI LIVE</header>
+<div class="max-w-5xl mx-auto p-4">
+<div id="list" class="grid md:grid-cols-2 gap-4">লোড হচ্ছে...</div>
 </div>
 <script>
-const supa = supabase.createClient("https://kosmgaxmnsnbzvjlsroi.supabase.co", "sb_publishable_n4JluW-GCFPotDCM4Ah8HQ_SUI-bx0K");
-const RSS = ["https://api.rss2json.com/v1/api.json?rss_url=https://www.prothomalo.com/feed","https://api.rss2json.com/v1/api.json?rss_url=https://bangla.bdnews24.com/rss.xml"];
-function log(t){ document.getElementById('log').innerHTML+=t+"<br>"; }
-document.getElementById('btn').onclick = async ()=>{
- log("⏳ RSS থেকে নিউজ আনছি...");
- for(let url of RSS){
-  try{
-   let r = await fetch(url).then(res=>res.json());
-   let items = r.items?.slice(0,5) || [];
-   for(let it of items){
-     let title = it.title;
-     let content = it.description.replace(/<[^>]*>/g,'').substring(0,500);
-     let rewritedTitle = "আপডেট: " + title; // AI Rewrite (এখানে OpenAI লাগালে ১০০% নতুন লেখা হবে)
-     let img = it.enclosure?.link || it.thumbnail || "";
-     await supa.from('news').insert({title: rewritedTitle, content: content, category: 'জাতীয়', image_url: img});
-     log("✅ পোস্ট: "+rewritedTitle);
-   }
-  }catch(e){ log("❌ Error: "+e.message); }
- }
- log("🎉 শেষ! এখন আপনার সাইটে নিউজ দেখাবে।");
-};
+const client = supabase.createClient("https://kosmgaxmnsnbzvjlsroi.supabase.co", "sb_publishable_n4JluW-GCFPotDCM4Ah8HQ_SUI-bx0K");
+async function load(){
+  const {data,error} = await client.from('news').select('*').order('created_at',{ascending:false}).limit(20);
+  if(error){ document.getElementById('list').innerHTML = "Error: "+error.message; return; }
+  if(!data || data.length==0){ document.getElementById('list').innerHTML = "কোনো নিউজ পাওয়া যায়নি, admin থেকে আনুন"; return; }
+  document.getElementById('list').innerHTML = data.map(n=>`
+    <div class="bg-white rounded shadow p-3">
+      <img src="${n.image_url||'https://picsum.photos/400/200'}" class="w-full h-44 object-cover rounded">
+      <h2 class="font-bold mt-2 leading-6">${n.title}</h2>
+      <p class="text-sm text-gray-600 mt-1">${(n.content||'').substring(0,120)}...</p>
+      <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded mt-2 inline-block">${n.category||'জাতীয়'}</span>
+    </div>
+  `).join('');
+}
+load();
 </script>
 </body>
 </html>
