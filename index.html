@@ -1,34 +1,39 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOP news - Daily Online Press</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOP News - দেশের কণ্ঠস্বর</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-body{font-family:sans-serif; margin:0; background:#f5f5f5}
-header{background:#b71c1c; color:white; padding:15px; text-align:center; font-size:24px; font-weight:bold}
-.container{max-width:800px; margin:auto; padding:20px}
-.card{background:white; padding:15px; margin-bottom:15px; border-radius:8px; box-shadow:0 2px 5px #0001}
-h2{margin:0 0 10px}
+body{font-family:SolaimanLipi,Noto Sans Bengali,sans-serif;margin:0;background:#f4f4f4}
+.header{background:#c00;color:#fff;padding:15px;text-align:center;font-size:28px;font-weight:bold}
+.nav{background:#222;color:#fff;display:flex;justify-content:center;gap:20px;padding:10px}
+.nav a{color:#fff;text-decoration:none}
+.ticker{background:#000;color:#fff;padding:8px;white-space:nowrap;overflow:hidden}
+.container{max-width:1100px;margin:auto;display:grid;grid-template-columns:2fr 1fr;gap:20px;padding:20px}
+.card{background:#fff;padding:15px;border-radius:8px;box-shadow:0 2px 5px #0001;margin-bottom:15px}
+.card img{width:100%;border-radius:8px}
 </style>
 </head>
 <body>
-<header>DOP news</header>
-<div class="container" id="news-list">
-<div class="card">লোড হচ্ছে...</div>
+<div class="header">DOP NEWS</div>
+<div class="nav"><a href="#">জাতীয়</a><a href="#">রাজনীতি</a><a href="#">খেলা</a><a href="#">আন্তর্জাতিক</a><a href="admin.html">Admin</a></div>
+<div class="ticker"><marquee>স্বাগতম DOP News এ - দেশের সর্বশেষ খবর সবার আগে...</marquee></div>
+<div class="container">
+<div id="main-news">লোড হচ্ছে...</div>
+<div><div class="card"><h3>সর্বশেষ</h3><div id="side-news"></div></div></div>
 </div>
 <script>
-const SUPABASE_URL = "https://kosmgaxmnsnbzvjlsroi.supabase.co";
-const SUPABASE_KEY = "sb_publishable_PASTE_YOUR_KEY_HERE";
-
+const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE"; // এখানে আপনার https://xxxx.supabase.co পেস্ট করবেন
+const SUPABASE_KEY = "sb_publishable_n4JluW-GCFPotDCM4Ah8HQ_SUl-bx0K";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 async function loadNews(){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/news?select=*&order=created_at.desc`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-  });
-  const data = await res.json();
-  const list = document.getElementById('news-list');
-  if(!data.length){ list.innerHTML = '<div class=card>এখনো কোনো নিউজ নেই। Supabase এ নিউজ যোগ করুন।</div>'; return; }
-  list.innerHTML = data.map(n => `<div class=card><h2>${n.title}</h2><p>${n.content || ''}</p></div>`).join('');
+ const {data, error} = await supabaseClient.from('news').select('*').order('created_at',{ascending:false});
+ if(error){document.getElementById('main-news').innerHTML=error.message; return;}
+ let html=''; data.forEach(n=>{
+   html+=`<div class="card"><img src="${n.image_url||'https://via.placeholder.com/600x300?text=DOP+News'}"><h2>${n.title}</h2><small>${n.category} | ${new Date(n.created_at).toLocaleString('bn-BD')}</small><p>${n.content}</p></div>`;
+ });
+ document.getElementById('main-news').innerHTML = html || 'কোনো নিউজ নেই';
 }
 loadNews();
 </script>
