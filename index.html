@@ -1,33 +1,38 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOP News 24 - AI LIVE</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOP NEWS 24 - AI LIVE</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-100">
-<header class="bg-red-600 text-white p-4 text-center font-bold text-2xl">DOP NEWS 24 - AI LIVE</header>
-<div class="max-w-5xl mx-auto p-4">
-<div id="list" class="grid md:grid-cols-2 gap-4">লোড হচ্ছে...</div>
-</div>
+<div class="bg-red-600 text-white text-center py-4 text-2xl font-bold">DOP NEWS 24 - AI LIVE</div>
+<div id="news-container" class="p-4 grid gap-4 max-w-2xl mx-auto"></div>
+
 <script>
-const supabaseUrl = "https://kosmgaxmnsnbzvjlsroi.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtvc21nYXhtbnNuYnp2amxzcm9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NTM3OTIsImV4cCI6MjEwNTIyOTc5Mn0.au_EMTL7mOTUFtihAa29dK7HTYt5et3lShje948lBNQ";
-const client = supabase.createClient(supabaseUrl, supabaseKey);
-async function load(){
-  const {data,error} = await client.from('news').select('*').order('created_at',{ascending:false}).limit(20);
-  if(error){ document.getElementById('list').innerHTML = "Error: "+error.message; return; }
-  document.getElementById('list').innerHTML = data.map(n=>`
-    <div class="bg-white rounded shadow p-3">
-      <img src="${n.image_url||'https://picsum.photos/400/200'}" class="w-full h-44 object-cover rounded">
-      <h2 class="font-bold mt-2 leading-6">${n.title}</h2>
-      <p class="text-sm text-gray-600 mt-1">${(n.content||'').substring(0,120)}...</p>
-      <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded mt-2 inline-block">${n.category||'জাতীয়'}</span>
-    </div>
-  `).join('');
+const SUPABASE_URL = "আপনার আগের URL টা এখানে বসান";
+const SUPABASE_KEY = "আপনার আগের anon KEY টা এখানে বসান";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadNews(){
+  const { data, error } = await supabaseClient.from('news').select('*').order('id', {ascending:false});
+  if(error){ console.log(error); return; }
+  const container = document.getElementById('news-container');
+  container.innerHTML = "";
+  data.forEach(n=>{
+    container.innerHTML += `
+      <div class="bg-white rounded-lg shadow p-3">
+        <img src="https://picsum.photos/seed/${n.id}/600/400" class="w-full h-48 object-cover rounded-lg mb-3">
+        <h2 class="font-bold text-lg mb-2">${n.title}</h2>
+        <p class="text-gray-600 text-sm mb-2">${n.summary}</p>
+        <span class="bg-red-100 text-red-600 text-xs px-3 py-1 rounded">${n.category}</span>
+      </div>
+    `;
+  });
 }
-load();
+loadNews();
 </script>
 </body>
 </html>
