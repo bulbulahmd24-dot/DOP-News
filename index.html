@@ -1,45 +1,144 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOP News 24 | সত্যের সাথে সবসময়</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+ body{font-family:'Noto Serif Bengali',serif;background:#fff}
+.marquee{white-space:nowrap;animation:marquee 60s linear infinite}
+ @keyframes marquee{0%{transform:translateX(20%)}100%{transform:translateX(-100%)}}
+</style>
+</head>
+<body>
+
+<!-- Date Bar -->
+<div class="border-b text-[12px] py-2 bg-white">
+ <div class="max-w-[1280px] mx-auto px-4 flex justify-between">
+  <span id="pDate"></span>
+  <span id="lastUpdate" class="text-gray-500">আপডেট হচ্ছে...</span>
+ </div>
+</div>
+
+<!-- LOGO ENGLISH -->
+<div class="text-center py-5 border-b bg-white">
+  <h1 class="text-5xl md:text-6xl font-black tracking-tight" style="font-family:serif">
+    <span class="text-black">DOP</span> <span class="text-[#c00]">News 24</span>
+  </h1>
+  <p class="text-[11px] tracking-[0.4em] mt-1 font-bold">SOTTER SATHE SOB SOMOY</p>
+</div>
+
+<!-- Menu -->
+<div class="sticky top-0 z-40 bg-white border-y shadow-sm">
+ <div class="max-w-[1280px] mx-auto px-4 flex gap-6 py-3 text-[14px] font-bold overflow-x-auto">
+  <a>সর্বশেষ</a><a>জাতীয়</a><a class="text-red-600">বিশ্ব</a><a>রাজনীতি</a><a>খেলা</a><a>বিনোদন</a>
+ </div>
+</div>
+
+<!-- Breaking -->
+<div class="bg-red-600 text-white flex items-center text-sm">
+ <span class="bg-black px-4 py-2 font-bold">ব্রেকিং</span>
+ <div class="overflow-hidden flex-1"><div id="ticker" class="marquee py-2">সংবাদ লোড হচ্ছে...</div></div>
+</div>
+
+<main class="max-w-[1280px] mx-auto px-4 py-6">
+ <div id="loading" class="text-center py-20 font-bold text-lg">সংবাদ লোড হচ্ছে...</div>
+ <div id="error" class="hidden text-center py-10 text-red-600"></div>
+ <section id="leadSection"></section>
+ <section id="gridSection" class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 border-t pt-8"></section>
+</main>
+
+<!-- Modal - Click Fix -->
+<div id="modal" class="hidden fixed inset-0 z-[999] bg-black/80 p-4 overflow-y-auto">
+ <div class="max-w-3xl mx-auto bg-white min-h-[90vh] relative">
+  <div class="flex justify-between items-center p-4 border-b sticky top-0 bg-white">
+    <b>DOP News 24</b>
+    <button onclick="closeM()" class="bg-black text-white px-4 py-1 rounded">✕ বন্ধ</button>
+  </div>
+  <div id="mBody" class="p-6"></div>
+ </div>
+</div>
+
 <script>
-async function load(){
+let allNews = [];
+document.getElementById('pDate').innerText = new Date().toLocaleDateString('bn-BD',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+async function loadNews(){
  try{
-  let r=await fetch(RSS); let j=await r.json();
-  let out=[];
-  for(let i=0;i<12;i++){
-    let it=j.items[i];
-    let bn=await toBn(it.title); // ইংরেজি থেকে বাংলায় অনুবাদ
-    out.push({
-      t: bn, // বাংলা শিরোনাম
-      d: await toBn(it.description.slice(0,100)),
-      img:it.enclosure?.link||`https://picsum.photos/seed/${i}/600/400`
-    })
-  }
-  // ticker বাংলায়
-  document.getElementById('ticker').innerText=out.map(x=>x.t).join(' ••• ');
+  document.getElementById('lastUpdate').innerText = "আপডেট হচ্ছে...";
+  // ক্যাশ বাস্টার + no-store = প্রতি ১০ মিনিটে নতুন খবর
+  let rssUrl = 'https://www.jagonews24.com/rss/rss.xml';
+  let apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&cb=${Date.now()}`;
+
+  let res = await fetch(apiUrl, {cache: "no-store"});
+  let data = await res.json();
+
+  if(!data.items || data.items.length==0) throw new Error("ফিড খালি");
+
+  let items = data.items.slice(0,15);
+  allNews = items;
+
+  document.getElementById('ticker').innerText = items.map(i=>i.title).join(' ••• ');
+  document.getElementById('lastUpdate').innerText = "শেষ আপডেট: " + new Date().toLocaleTimeString('bn-BD');
 
   // Lead - বাংলা হেডলাইন বড় করে
-  document.getElementById('leadSection').innerHTML=`
+  let lead = items[0];
+  document.getElementById('leadSection').innerHTML = `
     <div class="grid md:grid-cols-12 gap-6">
-      <div class="md:col-span-8">
-        <img src="${out[0].img}" class="w-full h-[420px] object-cover">
-        <h2 class="text-[36px] font-black leading-[1.2] mt-4 hover:text-red-600 cursor-pointer" style="font-family:'Noto Serif Bengali'">${out[0].t}</h2>
-        <p class="text-gray-600 mt-2 text-[15px]">${out[0].d}</p>
+      <div class="md:col-span-8 cursor-pointer" onclick="openM(0)">
+        <img src="${lead.enclosure?.link || 'https://picsum.photos/800/500'}" class="w-full h-[420px] object-cover">
+        <h2 class="text-[32px] md:text-[38px] font-black leading-tight mt-4 hover:text-red-600">${lead.title}</h2>
+        <p class="text-gray-600 mt-3">${lead.description.replace(/<[^>]*>/g,'').slice(0,130)}...</p>
       </div>
       <div class="md:col-span-4 space-y-5">
-        ${out.slice(1,5).map((x,i)=>`
-          <div class="flex gap-3 border-b pb-4 cursor-pointer">
-            <img src="${x.img}" class="w-24 h-20 object-cover">
-            <h3 class="font-black text-[16px] leading-snug">${x.t}</h3>
+        ${items.slice(1,5).map((x,i)=>`
+          <div onclick="openM(${i+1})" class="flex gap-3 cursor-pointer border-b pb-4 hover:bg-gray-50">
+            <img src="${x.enclosure?.link || 'https://picsum.photos/200/150'}" class="w-24 h-20 object-cover">
+            <h3 class="font-bold leading-snug text-[15px]">${x.title}</h3>
           </div>`).join('')}
       </div>
     </div>`;
 
-  // Grid - সব বাংলা হেডলাইন
-  document.getElementById('gridSection').innerHTML=out.slice(5).map(x=>`
-    <div class="cursor-pointer">
-      <img src="${x.img}" class="w-full h-48 object-cover">
-      <h3 class="font-black mt-3 text-[18px] leading-snug">${x.t}</h3>
+  // Grid - বাংলা হেডলাইন আকারে
+  document.getElementById('gridSection').innerHTML = items.slice(5).map((x,i)=>`
+    <div onclick="openM(${i+5})" class="cursor-pointer group">
+      <img src="${x.enclosure?.link || 'https://picsum.photos/400/300'}" class="w-full h-48 object-cover">
+      <h3 class="font-black mt-3 text-[18px] leading-snug group-hover:text-red-600">${x.title}</h3>
     </div>`).join('');
 
-  document.getElementById('loading').style.display='none';
- }catch(e){document.getElementById('loading').innerText='Loading...';}
+  document.getElementById('loading').classList.add('hidden');
+
+ }catch(e){
+  document.getElementById('error').innerText = "লোড হয়নি, ১ মিনিট পর আবার চেষ্টা হবে: " + e.message;
+  document.getElementById('error').classList.remove('hidden');
+ }
 }
+
+function openM(i){
+ let n = allNews[i];
+ if(!n) return;
+ document.getElementById('mBody').innerHTML = `
+   <img src="${n.enclosure?.link || ''}" class="w-full h-96 object-cover mb-6">
+   <h1 class="text-3xl font-black leading-tight mb-3">${n.title}</h1>
+   <p class="text-xs text-gray-500 mb-6">${new Date(n.pubDate).toLocaleString('bn-BD')} | DOP News 24</p>
+   <div class="text-[18px] leading-8 text-justify">${n.description}</div>
+   <br><br>
+   <a href="${n.link}" target="_blank" class="bg-red-600 text-white px-6 py-2 inline-block">মূল সংবাদ পড়ুন</a>
+ `;
+ document.getElementById('modal').classList.remove('hidden');
+ document.body.style.overflow='hidden';
+}
+function closeM(){
+ document.getElementById('modal').classList.add('hidden');
+ document.body.style.overflow='auto';
+}
+
+loadNews();
+// ১০ মিনিট পর পর অটো আপডেট
+setInterval(loadNews, 10*60*1000);
 </script>
+
+</body>
+</html>
