@@ -2,40 +2,38 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOP News - দেশের কণ্ঠস্বর</title>
+<title>DOP News 24 - AI News Portal</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-body{font-family:SolaimanLipi,Noto Sans Bengali,sans-serif;margin:0;background:#f4f4f4}
-.header{background:#c00;color:#fff;padding:15px;text-align:center;font-size:28px;font-weight:bold}
-.nav{background:#222;color:#fff;display:flex;justify-content:center;gap:20px;padding:10px}
-.nav a{color:#fff;text-decoration:none}
-.ticker{background:#000;color:#fff;padding:8px;white-space:nowrap;overflow:hidden}
-.container{max-width:1100px;margin:auto;display:grid;grid-template-columns:2fr 1fr;gap:20px;padding:20px}
-.card{background:#fff;padding:15px;border-radius:8px;box-shadow:0 2px 5px #0001;margin-bottom:15px}
-.card img{width:100%;border-radius:8px}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
+<style>body{font-family:'Noto Sans Bengali',sans-serif}</style>
 </head>
-<body>
-<div class="header">DOP NEWS</div>
-<div class="nav"><a href="#">জাতীয়</a><a href="#">রাজনীতি</a><a href="#">খেলা</a><a href="#">আন্তর্জাতিক</a><a href="admin.html">Admin</a></div>
-<div class="ticker"><marquee>স্বাগতম DOP News এ - দেশের সর্বশেষ খবর সবার আগে...</marquee></div>
-<div class="container">
-<div id="main-news">লোড হচ্ছে...</div>
-<div><div class="card"><h3>সর্বশেষ</h3><div id="side-news"></div></div></div>
+<body class="bg-[#f8f8f8]">
+<header class="bg-[#c00] text-white sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+<h1 class="text-2xl font-bold">DOP NEWS</h1>
+<span class="text-xs bg-white text-red-600 px-2 py-1 rounded">AI LIVE</span>
+</div>
+</header>
+<div class="max-w-7xl mx-auto p-4">
+<div id="breaking" class="bg-yellow-100 border-l-4 border-red-600 p-2 mb-4 text-sm"></div>
+<div id="news-grid" class="grid md:grid-cols-3 gap-5">লোড হচ্ছে...</div>
 </div>
 <script>
-const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE"; // এখানে আপনার https://xxxx.supabase.co পেস্ট করবেন
-const SUPABASE_KEY = "sb_publishable_n4JluW-GCFPotDCM4Ah8HQ_SUl-bx0K";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-async function loadNews(){
- const {data, error} = await supabaseClient.from('news').select('*').order('created_at',{ascending:false});
- if(error){document.getElementById('main-news').innerHTML=error.message; return;}
- let html=''; data.forEach(n=>{
-   html+=`<div class="card"><img src="${n.image_url||'https://via.placeholder.com/600x300?text=DOP+News'}"><h2>${n.title}</h2><small>${n.category} | ${new Date(n.created_at).toLocaleString('bn-BD')}</small><p>${n.content}</p></div>`;
- });
- document.getElementById('main-news').innerHTML = html || 'কোনো নিউজ নেই';
+const supa = supabase.createClient("https://kosmgaxmnsnbzvjlsroi.supabase.co", "sb_publishable_n4JluW-GCFPotDCM4Ah8HQ_SUI-bx0K");
+async function load(){
+ const {data} = await supa.from('news').select('*').order('created_at',{ascending:false}).limit(30);
+ if(!data || data.length==0){ document.getElementById('news-grid').innerHTML='কোনো নিউজ নেই। Admin থেকে AI দিয়ে আনুন।'; return; }
+ document.getElementById('breaking').innerText = '🔴 সর্বশেষ: ' + data[0].title;
+ document.getElementById('news-grid').innerHTML = data.map(n=>`
+  <div class="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition">
+   <img src="${n.image_url||'https://picsum.photos/400/200'}" class="w-full h-48 object-cover">
+   <div class="p-3"><span class="text-[11px] bg-red-600 text-white px-2 py-0.5 rounded">${n.category}</span>
+   <h2 class="font-bold text-[17px] leading-6 mt-2">${n.title}</h2>
+   <p class="text-[13px] text-gray-600 mt-1">${(n.content||'').substring(0,110)}...</p></div>
+  </div>`).join('');
 }
-loadNews();
+load();
 </script>
 </body>
 </html>
