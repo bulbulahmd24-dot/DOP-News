@@ -1,1 +1,33 @@
-sb_publishable_n4JluW-GCFPotDCM4Ah8HQ_SUl-bx0K
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOP News 24 - AI LIVE</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100">
+<header class="bg-red-600 text-white p-4 text-center font-bold text-2xl">DOP NEWS 24 - AI LIVE</header>
+<div class="max-w-5xl mx-auto p-4">
+<div id="list" class="grid md:grid-cols-2 gap-4">লোড হচ্ছে...</div>
+</div>
+<script>
+const supabaseUrl = "https://kosmgaxmnsnbzvjlsroi.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtvc21nYXhtbnNuYnp2amxzcm9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NTM3OTIsImV4cCI6MjEwNTIyOTc5Mn0.au_EMTL7mOTUFtihAa29dK7HTYt5et3lShje948lBNQ";
+const client = supabase.createClient(supabaseUrl, supabaseKey);
+async function load(){
+  const {data,error} = await client.from('news').select('*').order('created_at',{ascending:false}).limit(20);
+  if(error){ document.getElementById('list').innerHTML = "Error: "+error.message; return; }
+  document.getElementById('list').innerHTML = data.map(n=>`
+    <div class="bg-white rounded shadow p-3">
+      <img src="${n.image_url||'https://picsum.photos/400/200'}" class="w-full h-44 object-cover rounded">
+      <h2 class="font-bold mt-2 leading-6">${n.title}</h2>
+      <p class="text-sm text-gray-600 mt-1">${(n.content||'').substring(0,120)}...</p>
+      <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded mt-2 inline-block">${n.category||'জাতীয়'}</span>
+    </div>
+  `).join('');
+}
+load();
+</script>
+</body>
+</html>
