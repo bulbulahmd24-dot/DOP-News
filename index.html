@@ -1,32 +1,54 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DOP NEWS 24 - AI LIVE</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
-<div class="bg-[#b91c1c] text-white text-center py-4 text-2xl font-bold sticky top-0">DOP NEWS 24 - AI LIVE</div>
+<div class="bg-[#b91c1c] text-white text-center py-4 text-2xl font-bold">DOP NEWS 24 - AI LIVE</div>
 
-<div id="news" class="max-w-2xl mx-auto p-4 grid gap-4"></div>
+<div class="max-w-6xl mx-auto p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="news"></div>
+
+<!-- Details Modal -->
+<div id="modal" class="hidden fixed inset-0 bg-black/60 z-50 p-4 overflow-y-auto">
+ <div class="bg-white max-w-2xl mx-auto mt-10 rounded-xl overflow-hidden">
+  <div class="p-4 flex justify-between items-center border-b"><h2 class="font-bold">বিস্তারিত</h2><button onclick="closeModal()" class="bg-red-600 text-white px-3 py-1 rounded">X</button></div>
+  <div id="modalBody" class="p-4"></div>
+ </div>
+</div>
 
 <script>
 const newsList = [
- {id:1, title:"বাংলাদেশে AI প্রযুক্তিতে নতুন যুগের সূচনা", summary:"বাংলাদেশে কৃত্রিম বুদ্ধিমত্তা নিয়ে নতুন উদ্যোগ শুরু হয়েছে। তরুণ উদ্যোক্তারা AI দিয়ে নিউজ সাইট বানাচ্ছে।", cat:"প্রযুক্তি"},
- {id:2, title:"ঢাকায় আজ থেকে শুরু হচ্ছে ডিজিটাল মেলা", summary:"রাজধানীতে ৩ দিনব্যাপী ডিজিটাল উদ্ভাবনী মেলা শুরু হচ্ছে আজ।", cat:"জাতীয়"},
- {id:3, title:"বাংলাদেশ ক্রিকেট দলের দারুণ জয়", summary:"গতকালের ম্যাচে বাংলাদেশ দারুণভাবে জয়লাভ করেছে।", cat:"খেলা"},
- {id:4, title:"আজকের আবহাওয়া: বৃষ্টির সম্ভাবনা", summary:"আবহাওয়া অধিদপ্তর জানিয়েছে আজ দেশের বিভিন্ন স্থানে বৃষ্টি হতে পারে।", cat:"জাতীয়"},
- {id:5, title:"নতুন স্মার্টফোন বাজারে এলো", summary:"দেশের বাজারে নতুন ফিচার সমৃদ্ধ স্মার্টফোন এসেছে কম দামে।", cat:"প্রযুক্তি"}
+ {id:1, title:"বাংলাদেশে AI প্রযুক্তিতে নতুন যুগের সূচনা", summary:"বাংলাদেশে কৃত্রিম বুদ্ধিমত্তা নিয়ে নতুন উদ্যোগ শুরু হয়েছে। তরুণ উদ্যোক্তারা AI দিয়ে নিউজ সাইট বানাচ্ছে।", full:"বাংলাদেশে কৃত্রিম বুদ্ধিমত্তা (AI) নিয়ে নতুন যুগের সূচনা হয়েছে। দেশের তরুণ উদ্যোক্তারা এখন AI ব্যবহার করে অটোমেটিক নিউজ সাইট, কন্টেন্ট এবং বিভিন্ন ডিজিটাল সেবা তৈরি করছে। এটি দেশের প্রযুক্তি খাতে এক নতুন সম্ভাবনার দ্বার খুলে দিয়েছে।", cat:"প্রযুক্তি"},
+ {id:2, title:"ঢাকায় আজ থেকে শুরু হচ্ছে ডিজিটাল মেলা", summary:"রাজধানীতে ৩ দিনব্যাপী ডিজিটাল উদ্ভাবনী মেলা শুরু হচ্ছে আজ।", full:"রাজধানী ঢাকায় আজ থেকে ৩ দিনব্যাপী ডিজিটাল উদ্ভাবনী মেলা শুরু হচ্ছে। মেলায় দেশের ১০০+ স্টার্টআপ অংশ নিচ্ছে।", cat:"জাতীয়"},
+ {id:3, title:"বাংলাদেশ ক্রিকেট দলের দারুণ জয়", summary:"গতকালের ম্যাচে বাংলাদেশ দারুণভাবে জয়লাভ করেছে।", full:"গতকালের টি-২০ ম্যাচে বাংলাদেশ ৮ উইকেটে জয়লাভ করেছে। তামিমের সেঞ্চুরিতে এই জয়।", cat:"খেলা"},
+ {id:4, title:"আজকের আবহাওয়া: বৃষ্টির সম্ভাবনা", summary:"আবহাওয়া অধিদপ্তর জানিয়েছে আজ দেশের বিভিন্ন স্থানে বৃষ্টি হতে পারে।", full:"আবহাওয়া অধিদপ্তর জানিয়েছে আজ দেশের বিভিন্ন স্থানে হালকা থেকে মাঝারি বৃষ্টি হতে পারে।", cat:"জাতীয়"},
+ {id:5, title:"নতুন স্মার্টফোন বাজারে এলো", summary:"দেশের বাজারে নতুন ফিচার সমৃদ্ধ স্মার্টফোন এসেছে কম দামে।", full:"দেশের বাজারে ১৫ হাজার টাকায় ১০৮ মেগাপিক্সেল ক্যামেরা সহ নতুন স্মার্টফোন এসেছে।", cat:"প্রযুক্তি"}
 ];
+
 document.getElementById('news').innerHTML = newsList.map(n=>`
- <div class="bg-white rounded-xl shadow p-3">
-  <img src="https://picsum.photos/seed/${n.id}123/600/350" class="w-full h-52 object-cover rounded-lg mb-3">
-  <h2 class="font-bold text-[18px] leading-6 mb-2">${n.title}</h2>
-  <p class="text-gray-600 text-sm mb-3">${n.summary}</p>
-  <span class="bg-red-100 text-red-600 text-xs px-3 py-1 rounded-full">${n.cat}</span>
+ <div onclick="openNews(${n.id})" class="bg-white rounded-xl shadow hover:shadow-lg cursor-pointer overflow-hidden">
+  <img src="https://picsum.photos/seed/${n.id}99/600/350" class="w-full h-52 object-cover">
+  <div class="p-3">
+   <h2 class="font-bold text-[17px] leading-6 mb-2">${n.title}</h2>
+   <p class="text-gray-600 text-sm line-clamp-2">${n.summary}</p>
+   <span class="bg-red-100 text-red-600 text-xs px-3 py-1 rounded-full mt-2 inline-block">${n.cat}</span>
+  </div>
  </div>
 `).join('');
+
+function openNews(id){
+ const n = newsList.find(x=>x.id===id);
+ document.getElementById('modalBody').innerHTML = `
+  <img src="https://picsum.photos/seed/${n.id}99/800/400" class="w-full h-64 object-cover rounded-lg mb-4">
+  <h1 class="text-2xl font-bold mb-3">${n.title}</h1>
+  <p class="text-gray-700 leading-7">${n.full}</p>
+  <p class="mt-4 text-gray-600">${n.summary}</p>
+ `;
+ document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modal').classList.add('hidden');}
 </script>
 </body>
 </html>
