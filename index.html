@@ -2,53 +2,56 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOP News 24</title>
+<title>DOP News 24 | 24/7 Accurate News</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@700;900&display=swap" rel="stylesheet">
-<style>body{font-family:'Noto Serif Bengali',serif}</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@700;900&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+<style>body{font-family:'Noto Serif Bengali',serif;background:#fff}.marquee{white-space:nowrap;animation:marquee 50s linear infinite} @keyframes marquee{0%{transform:translateX(30%)}100%{transform:translateX(-100%)}}</style>
 </head>
-<body class="bg-white">
-<div class="border-b text-[11px] py-2 text-center">DOP News 24 | Dhaka | <span id="pDate"></span></div>
+<body>
+<div class="border-b text-[12px] py-2"><div class="max-w-[1280px] mx-auto px-4 flex justify-between"><span id="pDate"></span><span>DOP News 24 | ePaper</span></div></div>
 
-<!-- ENGLISH LOGO - NO IMAGE NEEDED -->
-<div class="text-center py-6 border-b">
-  <h1 class="text-6xl font-black tracking-tight" style="font-family:serif">
-    <span class="text-black">DOP</span><span class="text-[#cc0000]"> News 24</span>
-  </h1>
-  <p class="text-[10px] tracking-[0.5em] mt-1">24/7 • ACCURATE • RELIABLE</p>
+<!-- ENGLISH LOGO HEADER -->
+<div class="text-center py-5 border-b bg-white">
+  <img src="logo.png" alt="DOP News 24" class="mx-auto h-[65px] md:h-[85px] object-contain">
 </div>
 
-<div class="sticky top-0 z-40 bg-white border-y"><div class="max-w-[1280px] mx-auto px-4 flex gap-5 py-2.5 text-[13px] font-bold"><span class="text-red-600">World</span><span>National</span><span>Politics</span><span>Sports</span></div></div>
-<div class="bg-red-600 text-white text-[12px] py-1.5 px-4" id="ticker">Loading news...</div>
+<div class="sticky top-0 z-40 bg-white border-y shadow-sm"><div class="max-w-[1280px] mx-auto px-4 flex gap-5 py-3 text-[14px] font-bold overflow-x-auto"><span>Latest</span><span>National</span><span class="text-red-600">World</span><span>Politics</span><span>Sports</span><span>Entertainment</span><span>Tech</span></div></div>
+<div class="bg-red-600 text-white flex items-center text-[13px]"><span class="bg-black px-4 py-2 font-bold">BREAKING</span><div class="overflow-hidden flex-1"><div id="ticker" class="marquee py-2">Loading...</div></div></div>
 
 <main class="max-w-[1280px] mx-auto px-4 py-6">
- <div id="loading" class="py-20 text-center font-bold">Loading... 10 sec wait</div>
- <div id="leadSection"></div>
- <div id="gridSection" class="grid md:grid-cols-3 gap-6 mt-8 border-t pt-6"></div>
+ <div id="loading" class="text-center py-20 font-bold">সংবাদ লোড হচ্ছে...</div>
+ <div id="error" class="hidden text-center text-red-600 py-10"></div>
+ <section id="leadSection"></section>
+ <section id="gridSection" class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 border-t pt-8"></section>
 </main>
 
-<div id="modal" class="hidden fixed inset-0 z-50 bg-black/80 p-4 overflow-y-auto"><div class="max-w-2xl mx-auto bg-white p-6"><button onclick="document.getElementById('modal').classList.add('hidden')" class="float-right text-2xl">×</button><div id="mBody"></div></div></div>
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/70 p-4 overflow-y-auto"><div class="max-w-3xl mx-auto bg-white"><div class="flex justify-between p-4 border-b sticky top-0 bg-white"><b>DOP News 24</b><button onclick="document.getElementById('modal').classList.add('hidden')" class="text-2xl">×</button></div><div id="mBody" class="p-6"></div></div></div>
 
 <script>
-const RSS="https://api.rss2json.com/v1/api.json?rss_url=https://feeds.bbci.co.uk/news/world/rss.xml";
-const TR="https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=bn&dt=t&q=";
-let all=[];
-document.getElementById('pDate').innerText=new Date().toLocaleDateString('bn-BD',{day:'numeric',month:'long',year:'numeric'});
-async function toBn(t){try{let r=await fetch(TR+encodeURIComponent(t.slice(0,1200)));let d=await r.json();return d[0].map(x=>x[0]).join('')}catch{return t}}
-async function load(){
+const FEEDS=["https://feeds.bbci.co.uk/news/world/rss.xml","https://rss.cnn.com/rss/edition.rss"];
+const RSS_API="https://api.rss2json.com/v1/api.json?rss_url=";
+const TR_API="https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=bn&dt=t&q=";
+let allNews=[];
+document.getElementById('pDate').innerText=new Date().toLocaleDateString('bn-BD',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+async function toBn(t){try{let r=await fetch(TR_API+encodeURIComponent(t.slice(0,1500)));let d=await r.json();return d[0].map(x=>x[0]).join('');}catch{return t;}}
+function clean(s){let d=document.createElement('div');d.innerHTML=s||"";return d.textContent.trim().slice(0,200);}
+async function loadNews(){
  try{
-  let r=await fetch(RSS); let j=await r.json();
-  let out=[]; for(let i=0;i<8;i++){let it=j.items[i]; let bn=await toBn(it.title); out.push({t:bn,d:it.description.slice(0,120),img:it.enclosure?.link||`https://picsum.photos/seed/${i}/600/400`})}
-  all=out;
-  document.getElementById('ticker').innerText=out.map(x=>x.t).join(' • ');
-  document.getElementById('leadSection').innerHTML=`<div class="grid md:grid-cols-3 gap-6"><div class="md:col-span-2"><img src="${out[0].img}" class="w-full h-[350px] object-cover"><h2 onclick="openM(0)" class="text-3xl font-black mt-3 cursor-pointer">${out[0].t}</h2></div><div class="space-y-4">${out.slice(1,4).map((x,i)=>`<div onclick="openM(${i+1})" class="flex gap-3 border-b pb-3 cursor-pointer"><img src="${x.img}" class="w-20 h-16 object-cover"><b class="text-sm">${x.t}</b></div>`).join('')}</div></div>`;
-  document.getElementById('gridSection').innerHTML=out.slice(4).map((x,i)=>`<div onclick="openM(${i+4})" class="cursor-pointer"><img src="${x.img}" class="w-full h-40 object-cover"><b class="mt-2 block text-sm">${x.t}</b></div>`).join('');
-  document.getElementById('loading').style.display='none';
- }catch(e){document.getElementById('loading').innerText='Error: '+e.message+' - Refresh করুন';}
+  let merged=[];for(let f of FEEDS){try{let r=await fetch(RSS_API+encodeURIComponent(f));let j=await r.json();if(j.items)merged=merged.concat(j.items);}catch{}}
+  if(!merged.length) throw new Error("Feed loading...");
+  merged.sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));
+  let out=[];for(let i=0;i<Math.min(merged.length,12);i++){let it=merged[i];let bnT=await toBn(clean(it.title));let bnD=await toBn(clean(it.description));out.push({titleBn:bnT,descBn:bnD,img:it.enclosure?.link||`https://picsum.photos/seed/${i+99}/600/400`,report:`<h1 class="text-3xl font-black mb-3">${bnT}</h1><p class="text-xs text-gray-500 mb-4">${new Date().toLocaleString('bn-BD')} | DOP News 24</p><p class="text-lg leading-8 text-justify mb-4">${bnD}।</p><p class="leading-8 text-justify">নতুন তথ্য পেলে DOP News 24 সাথে সাথে জানাবে।</p>`});}
+  allNews=out;
+  document.getElementById('ticker').innerText=out.map(n=>n.titleBn).join(' ••• ');
+  let lead=out[0];
+  document.getElementById('leadSection').innerHTML=`<div class="grid md:grid-cols-12 gap-6"><div class="md:col-span-8"><img src="${lead.img}" class="w-full h-[380px] object-cover"><h2 onclick="openM(0)" class="text-[32px] font-black leading-tight mt-4 cursor-pointer hover:text-red-600">${lead.titleBn}</h2><p class="text-gray-600 mt-2">${lead.descBn}</p></div><div class="md:col-span-4 space-y-5">${out.slice(1,5).map((x,i)=>`<div onclick="openM(${i+1})" class="flex gap-3 cursor-pointer border-b pb-4"><img src="${x.img}" class="w-24 h-20 object-cover"><h3 class="font-bold text-[15px] leading-snug">${x.titleBn}</h3></div>`).join('')}</div></div>`;
+  document.getElementById('gridSection').innerHTML=out.slice(5).map((x,i)=>`<div onclick="openM(${i+5})" class="cursor-pointer"><img src="${x.img}" class="w-full h-48 object-cover"><h3 class="font-bold mt-3">${x.titleBn}</h3><p class="text-sm text-gray-600 mt-2">${x.descBn}</p></div>`).join('');
+  document.getElementById('loading').classList.add('hidden');
+ }catch(e){document.getElementById('loading').innerText=e.message;}
 }
-function openM(i){document.getElementById('mBody').innerHTML=`<img src="${all[i].img}" class="w-full h-64 object-cover mb-4"><h1 class="text-2xl font-black mb-3">${all[i].t}</h1><p>${all[i].d}</p>`;document.getElementById('modal').classList.remove('hidden')}
-load();
-setInterval(load,10*60*1000);
+function openM(i){let n=allNews[i];document.getElementById('mBody').innerHTML=`<img src="${n.img}" class="w-full h-80 object-cover mb-5">${n.report}`;document.getElementById('modal').classList.remove('hidden');}
+loadNews();
+setInterval(loadNews,10*60*1000);
 </script>
 </body>
 </html>
