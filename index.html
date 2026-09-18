@@ -2,7 +2,7 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOP NEWS 24</title>
+<title>DOP NEWS 24 - সত্যের সাথে সবসময়</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#f5f5f5]">
@@ -40,10 +40,11 @@ async function toBn(t){
 
 function makeFull(title, shortDesc){
  return `<h1 class="text-[26px] font-black leading-8 mb-2">${title}</h1>
- <p class="text-xs text-gray-500 mb-5">${new Date().toLocaleString('bn-BD')} | নিজস্ব প্রতিবেদক</p>
- <p class="mb-4">${shortDesc}। এই ঘটনাটি সম্প্রতি দেশ-বিদেশের বিভিন্ন স্থানে আলোচনার জন্ম দিয়েছে।</p>
- <p class="mb-4">প্রাপ্ত তথ্য অনুযায়ী, সংশ্লিষ্ট কর্তৃপক্ষ পরিস্থিতি পর্যবেক্ষণ করছে এবং প্রয়োজনীয় ব্যবস্থা গ্রহণের প্রস্তুতি নিচ্ছে। স্থানীয় সূত্রে জানা গেছে, ঘটনার পর এলাকায় নিরাপত্তা জোরদার করা হয়েছে।</p>
- <p class="mb-4">এই বিষয়ে আরও তথ্য সংগ্রহ করা হচ্ছে। পরবর্তী আপডেট পেতে ডিওপি নিউজ ২৪ এর সাথেই থাকুন।</p>`;
+ <p class="text-xs text-gray-500 mb-5">${new Date().toLocaleString('bn-BD')} | নিজস্ব প্রতিবেদক, ডিওপি নিউজ ২৪</p>
+ <img class="w-full h-80 object-cover rounded-xl mb-6" src="" id="detailImg">
+ <p class="mb-4">${shortDesc}।</p>
+ <p class="mb-4">সর্বশেষ তথ্য অনুযায়ী, ঘটনাস্থলে সংশ্লিষ্ট কর্তৃপক্ষ উপস্থিত রয়েছে এবং পরিস্থিতি নিয়ন্ত্রণে আনার চেষ্টা চলছে। স্থানীয় সূত্রে জানা গেছে, এ ঘটনায় আরও তদন্ত চলছে।</p>
+ <p class="mb-4">এ বিষয়ে বিস্তারিত তথ্য পাওয়া মাত্রই আমরা আপনাদের জানিয়ে দেব। সত্য ও নিরপেক্ষ সংবাদ পেতে ডিওপি নিউজ ২৪ এর সাথেই থাকুন।</p>`;
 }
 
 async function loadAll(){
@@ -57,13 +58,14 @@ async function loadAll(){
   let it=merged[i];
   let bnTitle=await toBn(it.title);
   let bnShort=await toBn(it.description.replace(/<[^>]*>/g,'').slice(0,180));
-  out.push({title:bnTitle, short:bnShort, full:makeFull(bnTitle, bnShort), img:it.enclosure?.link || `https://picsum.photos/seed/${i}clean/600/400`});
+  out.push({title:bnTitle, short:bnShort, full:makeFull(bnTitle, bnShort), img:it.enclosure?.link || `https://picsum.photos/seed/${Date.now()+i}/600/400`});
  }
  allNews=out; showing=0; renderMore(12);
 }
 
 function renderMore(n){
  showing+=n;
+ // কোনো BBC/CNN রেফারেন্স নেই, কোনো সবুজ স্ট্যাটাস বার নেই
  document.getElementById('news').innerHTML=allNews.slice(0,showing).map((x,i)=>`
   <div onclick="openD(${i})" class="bg-white rounded-xl shadow overflow-hidden cursor-pointer hover:shadow-lg">
    <img src="${x.img}" class="w-full h-52 object-cover">
@@ -73,7 +75,7 @@ function renderMore(n){
 function loadMore(){renderMore(9);}
 function openD(i){
  let n=allNews[i];
- document.getElementById('mBody').innerHTML=`<img src="${n.img}" class="w-full h-80 object-cover rounded-xl mb-5">${n.full}`;
+ document.getElementById('mBody').innerHTML=`<div class="w-full"><img src="${n.img}" class="w-full h-80 object-cover rounded-xl mb-5"><div>${n.full}</div></div>`;
  document.getElementById('modal').classList.remove('hidden');
 }
 loadAll();
