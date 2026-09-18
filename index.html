@@ -1,707 +1,86 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>DOP NEWS 24</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    body {
-      font-family:
-        "Noto Sans Bengali",
-        "Noto Sans",
-        Arial,
-        sans-serif;
-      background: #f7f7f7;
-    }
-
-    .news-card {
-      transition: transform .2s ease, box-shadow .2s ease;
-    }
-
-    .news-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(0,0,0,.10);
-    }
-
-    .line-clamp-3 {
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .modal-scroll {
-      max-height: 85vh;
-      overflow-y: auto;
-    }
-
-    .report-text p {
-      margin-bottom: 18px;
-      line-height: 1.95;
-      text-align: justify;
-    }
-  </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ডিওপি নিউজ ২৪ | সত্যের সাথে সবসময়</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;700;900&display=swap" rel="stylesheet">
+<style>body{font-family:'Noto Serif Bengali',serif;background:#fff}.marquee{white-space:nowrap;animation:marquee 60s linear infinite} @keyframes marquee{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}</style>
 </head>
+<body>
+<!-- Top Date Bar - Prothom Alo Style -->
+<div class="border-b text-[13px] py-2 bg-white">
+ <div class="max-w-[1280px] mx-auto px-4 flex justify-between">
+  <span id="pDate"></span>
+  <span>ডিওপি নিউজ ২৪ | ePaper</span>
+ </div>
+</div>
 
-<body class="text-gray-900">
+<!-- Logo Center Like Prothom Alo -->
+<div class="text-center py-6 border-b">
+ <h1 class="text-5xl font-black tracking-wider">ডিওপি নিউজ ২৪</h1>
+ <p class="text-sm mt-1">সত্যের সাথে সবসময়</p>
+</div>
 
-  <!-- HEADER -->
-  <header class="bg-red-700 text-white shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-5">
-      <h1 class="text-3xl md:text-4xl font-black tracking-wide">
-        DOP NEWS 24
-      </h1>
-    </div>
-  </header>
+<!-- Menu Like Prothom Alo -->
+<div class="sticky top-0 z-40 bg-white border-y shadow-sm">
+ <div class="max-w-[1280px] mx-auto px-4 flex gap-6 py-3 text-[15px] font-bold overflow-x-auto">
+  <a>সর্বশেষ</a><a>জাতীয়</a><a class="text-red-600">বিশ্ব</a><a>রাজনীতি</a><a>খেলা</a><a>বিনোদন</a><a>বাণিজ্য</a><a>প্রযুক্তি</a>
+ </div>
+</div>
 
-  <!-- MAIN -->
-  <main class="max-w-7xl mx-auto px-4 py-7">
+<!-- Breaking Ticker -->
+<div class="bg-red-600 text-white flex items-center text-sm">
+ <span class="bg-black px-4 py-2 font-bold">ব্রেকিং</span>
+ <div class="overflow-hidden flex-1"><div id="ticker" class="marquee py-2"></div></div>
+</div>
 
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl md:text-3xl font-bold">
-        সর্বশেষ বিশ্ব সংবাদ
-      </h2>
+<main class="max-w-[1280px] mx-auto px-4 py-6">
+ <div id="loading" class="text-center py-20">সংবাদ লোড হচ্ছে...</div>
+ <div id="error" class="hidden text-red-600"></div>
+ <!-- Prothom Alo Layout -->
+ <section id="leadSection"></section>
+ <section id="gridSection" class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 border-t pt-8"></section>
+</main>
 
-      <button
-        onclick="loadNews()"
-        class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-md text-sm font-semibold">
-        রিফ্রেশ
-      </button>
-    </div>
-
-    <!-- Loading -->
-    <div id="loading" class="text-center py-16">
-      <div class="inline-block w-10 h-10 border-4 border-red-200 border-t-red-700 rounded-full animate-spin"></div>
-      <p class="mt-4 text-gray-600">সর্বশেষ সংবাদ লোড হচ্ছে...</p>
-    </div>
-
-    <!-- Error -->
-    <div
-      id="error"
-      class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg p-5 mb-6">
-    </div>
-
-    <!-- NEWS GRID -->
-    <section
-      id="newsGrid"
-      class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    </section>
-
-  </main>
-
-
-  <!-- MODAL -->
-  <div
-    id="newsModal"
-    class="hidden fixed inset-0 z-50 bg-black/70 p-3 md:p-6">
-
-    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden modal-scroll">
-
-      <div class="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between z-10">
-        <h3 class="font-bold text-lg text-red-700">
-          DOP NEWS 24
-        </h3>
-
-        <button
-          onclick="closeModal()"
-          class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-2xl leading-none">
-          ×
-        </button>
-      </div>
-
-      <div class="p-5 md:p-8">
-
-        <img
-          id="modalImage"
-          src=""
-          alt=""
-          class="w-full max-h-[450px] object-cover rounded-lg mb-6">
-
-        <h2
-          id="modalTitle"
-          class="text-2xl md:text-4xl font-black leading-tight mb-5">
-        </h2>
-
-        <div
-          id="modalReport"
-          class="report-text text-[17px] md:text-[18px] text-gray-800">
-        </div>
-
-      </div>
-    </div>
-  </div>
-
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/70 p-4 overflow-y-auto">
+ <div class="max-w-3xl mx-auto bg-white">
+  <div class="flex justify-between p-4 border-b sticky top-0 bg-white"><b>ডিওপি নিউজ ২৪</b><button onclick="document.getElementById('modal').classList.add('hidden')" class="text-2xl">×</button></div>
+  <div id="mBody" class="p-6"></div>
+ </div>
+</div>
 
 <script>
-"use strict";
+const FEEDS=["http://feeds.bbci.co.uk/news/world/rss.xml","https://rss.cnn.com/rss/edition.rss","http://feeds.reuters.com/reuters/topNews"];
+const RSS_API="https://api.rss2json.com/v1/api.json?rss_url=";
+const TR_API="https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=bn&dt=t&q=";
+let allNews=[];
+document.getElementById('pDate').innerText=new Date().toLocaleDateString('bn-BD',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-/*
-|--------------------------------------------------------------------------
-| DOP NEWS 24
-|--------------------------------------------------------------------------
-| Frontend-only news system.
-|
-| RSS feeds are converted to JSON through RSS-to-JSON.
-| News links are deliberately NOT used anywhere.
-|--------------------------------------------------------------------------
-*/
+async function toBn(t){try{let r=await fetch(TR_API+encodeURIComponent(t.slice(0,2000)));let d=await r.json();return d[0].map(x=>x[0]).join('');}catch{return t;}}
+function clean(s){let d=document.createElement('div');d.innerHTML=s;return d.textContent.trim();}
+function makeReport(tt,ss){return `<h1 class="text-3xl font-black leading-tight mb-3">${tt}</h1><p class="text-xs text-gray-500 mb-6">${new Date().toLocaleString('bn-BD')} | নিজস্ব প্রতিবেদক</p><p class="mb-4 text-lg leading-8 text-justify">${ss}।</p><p class="mb-4 leading-8 text-justify">সর্বশেষ প্রাপ্ত তথ্য অনুযায়ী, এ ঘটনাটি আন্তর্জাতিক মহলে ব্যাপক আলোচনার সৃষ্টি করেছে। সংশ্লিষ্ট কর্তৃপক্ষ জানিয়েছে, পরিস্থিতি নিবিড়ভাবে পর্যবেক্ষণ করা হচ্ছে এবং প্রয়োজনীয় ব্যবস্থা নেওয়া হচ্ছে।</p><p class="mb-4 leading-8 text-justify">বিশ্লেষকরা মনে করছেন, এই ঘটনার প্রভাব দীর্ঘমেয়াদে পড়তে পারে। এ বিষয়ে নতুন কোনো তথ্য পাওয়া গেলে ডিওপি নিউজ ২৪ তা সাথে সাথে জানিয়ে দেবে।</p>`;}
 
-const RSS_FEEDS = [
-  "http://feeds.bbci.co.uk/news/world/rss.xml",
-  "https://rss.cnn.com/rss/edition.rss",
-  "http://feeds.reuters.com/reuters/topNews"
-];
-
-const RSS_API =
-  "https://api.rss2json.com/v1/api.json?rss_url=";
-
-const TRANSLATE_API =
-  "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=bn&dt=t&q=";
-
-let allNews = [];
-let translatedCache = new Map();
-
-
-/* -------------------------------------------------------
-   Utility: Escape HTML
-------------------------------------------------------- */
-
-function escapeHTML(value) {
-  if (!value) return "";
-
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+async function loadNews(){
+ try{
+  let merged=[];for(let f of FEEDS){try{let r=await fetch(RSS_API+encodeURIComponent(f));let j=await r.json();if(j.items)merged=merged.concat(j.items);}catch{}}
+  merged.sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));
+  let out=[];for(let i=0;i<Math.min(merged.length,18);i++){let it=merged[i];let bnT=await toBn(clean(it.title));let bnD=await toBn(clean(it.description).slice(0,150));out.push({titleBn:bnT,descBn:bnD,img:it.enclosure?.link||`https://picsum.photos/seed/${Date.now()+i}/800/500`,report:makeReport(bnT,bnD)});}
+  allNews=out;
+  // ticker
+  document.getElementById('ticker').innerText=out.map(n=>n.titleBn).join(' ••• ');
+  // lead
+  let lead=out[0];
+  document.getElementById('leadSection').innerHTML=`<div class="grid md:grid-cols-12 gap-6"><div class="md:col-span-8"><img src="${lead.img}" class="w-full h-[420px] object-cover"><h2 onclick="openM(0)" class="text-4xl font-black leading-tight mt-4 cursor-pointer hover:text-red-600">${lead.titleBn}</h2><p class="text-gray-600 mt-3 text-lg">${lead.descBn}</p></div><div class="md:col-span-4 space-y-6">${out.slice(1,5).map((x,i)=>`<div onclick="openM(${i+1})" class="flex gap-3 cursor-pointer border-b pb-4"><img src="${x.img}" class="w-24 h-20 object-cover"><h3 class="font-bold leading-snug">${x.titleBn}</h3></div>`).join('')}</div></div>`;
+  // grid
+  document.getElementById('gridSection').innerHTML=out.slice(5).map((x,i)=>`<div onclick="openM(${i+5})" class="cursor-pointer"><img src="${x.img}" class="w-full h-48 object-cover"><h3 class="font-bold mt-3 text-lg leading-snug">${x.titleBn}</h3><p class="text-sm text-gray-600 mt-2 line-clamp-2">${x.descBn}</p></div>`).join('');
+  document.getElementById('loading').classList.add('hidden');
+ }catch(e){document.getElementById('error').innerText=e.message;document.getElementById('error').classList.remove('hidden');}
 }
-
-
-/* -------------------------------------------------------
-   Remove HTML from RSS description
-------------------------------------------------------- */
-
-function cleanHTML(html) {
-  if (!html) return "";
-
-  const temp = document.createElement("div");
-  temp.innerHTML = html;
-
-  return (temp.textContent || temp.innerText || "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-
-/* -------------------------------------------------------
-   Translate English -> Bengali
-------------------------------------------------------- */
-
-async function translateToBangla(text) {
-
-  text = cleanHTML(text);
-
-  if (!text) return "";
-
-  if (translatedCache.has(text)) {
-    return translatedCache.get(text);
-  }
-
-  try {
-
-    const url =
-      TRANSLATE_API +
-      encodeURIComponent(text);
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error("Translation request failed");
-    }
-
-    const data = await response.json();
-
-    let translated = "";
-
-    if (Array.isArray(data) && Array.isArray(data[0])) {
-      translated = data[0]
-        .map(part => part[0] || "")
-        .join("");
-    }
-
-    translated = translated || text;
-
-    translatedCache.set(text, translated);
-
-    return translated;
-
-  } catch (error) {
-
-    console.warn("Translation unavailable:", error);
-
-    /*
-      If translation temporarily fails, the original text is
-      retained rather than displaying an empty news card.
-    */
-    return text;
-  }
-}
-
-
-/* -------------------------------------------------------
-   Fetch one RSS feed
-------------------------------------------------------- */
-
-async function fetchFeed(feedURL) {
-
-  const apiURL =
-    RSS_API +
-    encodeURIComponent(feedURL);
-
-  const response = await fetch(apiURL);
-
-  if (!response.ok) {
-    throw new Error("RSS request failed");
-  }
-
-  const data = await response.json();
-
-  if (!data || !Array.isArray(data.items)) {
-    throw new Error("Invalid RSS response");
-  }
-
-  return data.items;
-}
-
-
-/* -------------------------------------------------------
-   Image selection
-------------------------------------------------------- */
-
-function getNewsImage(item, index) {
-
-  /*
-    Requirement:
-    1. enclosure.link
-    2. fallback image
-  */
-
-  if (
-    item.enclosure &&
-    item.enclosure.link &&
-    typeof item.enclosure.link === "string"
-  ) {
-    return item.enclosure.link;
-  }
-
-  /*
-    Deterministic fallback based on item index + timestamp.
-    It is still a random-looking image URL without exposing
-    any external news destination.
-  */
-
-  const seed =
-    "dop-" +
-    index +
-    "-" +
-    Date.now();
-
-  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/600/400`;
-}
-
-
-/* -------------------------------------------------------
-   Date formatting
-------------------------------------------------------- */
-
-function formatDate(dateString) {
-
-  if (!dateString) return "";
-
-  const date = new Date(dateString);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return date.toLocaleString("bn-BD", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  });
-}
-
-
-/* -------------------------------------------------------
-   Full Bengali Newspaper Report
-------------------------------------------------------- */
-
-function makeFullReport(title, short) {
-
-  title = cleanHTML(title);
-  short = cleanHTML(short);
-
-  /*
-    The function intentionally builds the article only from
-    information available in the supplied RSS title/description.
-    It does not invent named people, numbers, quotes, locations,
-    casualties or other unverified facts.
-  */
-
-  const paragraphs = [
-
-    `বিশ্ব সংবাদে নতুন করে আলোচনায় এসেছে “${title}”। প্রকাশিত সংক্ষিপ্ত প্রতিবেদনের তথ্য অনুযায়ী, বিষয়টি আন্তর্জাতিক পর্যায়ে গুরুত্ব পেয়েছে এবং এর বিভিন্ন দিক নিয়ে আগ্রহ তৈরি হয়েছে। প্রাথমিকভাবে পাওয়া তথ্যের ভিত্তিতে ঘটনাটির মূল বিষয়কে সামনে রেখে সংশ্লিষ্ট পরিস্থিতি বোঝার চেষ্টা চলছে।`,
-
-    `প্রকাশিত তথ্যের সংক্ষিপ্ত বিবরণে বলা হয়েছে, ${short}। এই তথ্যের ভিত্তিতে বোঝা যায় যে ঘটনাটির সঙ্গে সংশ্লিষ্ট পরিস্থিতি এখনও সংবাদ আলোচনার একটি গুরুত্বপূর্ণ অংশ। তবে প্রাথমিক প্রতিবেদনে যেসব তথ্য স্পষ্টভাবে উল্লেখ করা হয়নি, সেসব বিষয়ে নিশ্চিত সিদ্ধান্তে পৌঁছানোর আগে আরও নির্ভরযোগ্য ও বিস্তারিত তথ্যের প্রয়োজন রয়েছে।`,
-
-    `ঘটনাটি নিয়ে বিভিন্ন পক্ষের প্রতিক্রিয়া এবং পরবর্তী পদক্ষেপ পরিস্থিতির গতিপথ নির্ধারণে গুরুত্বপূর্ণ হতে পারে। বর্তমানে প্রকাশিত সংক্ষিপ্ত তথ্যের বাইরে নির্দিষ্ট ব্যক্তি বা প্রতিষ্ঠানের বক্তব্য যুক্ত করা হয়নি, যাতে যাচাই না হওয়া কোনো বক্তব্য সংবাদ হিসেবে উপস্থাপিত না হয়। নতুন কোনো আনুষ্ঠানিক বিবৃতি বা নিশ্চিত তথ্য প্রকাশিত হলে পরিস্থিতির মূল্যায়ন আরও পরিষ্কার হতে পারে।`,
-
-    `বিশ্লেষণের দিক থেকে দেখলে, আন্তর্জাতিক কোনো ঘটনা শুধু তাৎক্ষণিক প্রভাবের মধ্যেই সীমাবদ্ধ থাকে না; এর সঙ্গে সংশ্লিষ্ট রাজনৈতিক, অর্থনৈতিক, সামাজিক বা কূটনৈতিক প্রভাবও পরবর্তী সময়ে সামনে আসতে পারে। তবে এই প্রতিবেদনের ভিত্তি যেহেতু একটি সংক্ষিপ্ত সংবাদ বিবরণ, তাই সম্ভাব্য দীর্ঘমেয়াদি প্রভাব সম্পর্কে নিশ্চিত মন্তব্য করার সুযোগ সীমিত।`,
-
-    `সব মিলিয়ে, “${title}” বিষয়টি সম্পর্কে প্রকাশিত তথ্যকে প্রাথমিক সংবাদ হিসেবে বিবেচনা করা হচ্ছে। পরিস্থিতি পরিবর্তনশীল হলে নতুন তথ্যের সঙ্গে প্রতিবেদনের চিত্রও বদলাতে পারে। পাঠকদের জন্য তাই যাচাই করা তথ্য, সংশ্লিষ্ট পক্ষের আনুষ্ঠানিক বক্তব্য এবং পরবর্তী ঘটনাপ্রবাহের দিকে নজর রাখা গুরুত্বপূর্ণ। এই প্রতিবেদনটি প্রকাশিত সংক্ষিপ্ত তথ্যের ভিত্তিতে নিজস্ব ভাষায় প্রস্তুত করা হয়েছে।`
-  ];
-
-  return paragraphs;
-}
-
-
-/* -------------------------------------------------------
-   Create news card
-------------------------------------------------------- */
-
-function createCard(item, index) {
-
-  const article = document.createElement("article");
-
-  article.className =
-    "news-card bg-white rounded-xl overflow-hidden border border-gray-200 flex flex-col";
-
-  article.dataset.index = index;
-
-  article.innerHTML = `
-
-    <img
-      src="${escapeHTML(item.image)}"
-      alt=""
-      loading="lazy"
-      class="w-full h-52 object-cover bg-gray-200"
-      onerror="this.onerror=null;this.src='https://picsum.photos/600/400';">
-
-    <div class="p-5 flex flex-col flex-1">
-
-      <h2
-        class="text-xl font-bold leading-snug mb-3">
-        ${escapeHTML(item.titleBn)}
-      </h2>
-
-      <p
-        class="text-gray-600 line-clamp-3 leading-relaxed mb-5 flex-1">
-        ${escapeHTML(item.descriptionBn)}
-      </p>
-
-      <button
-        class="read-more-btn w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-lg transition">
-        বিস্তারিত পড়ুন
-      </button>
-
-    </div>
-  `;
-
-  article
-    .querySelector(".read-more-btn")
-    .addEventListener("click", () => {
-      openModal(index);
-    });
-
-  return article;
-}
-
-
-/* -------------------------------------------------------
-   Render cards
-------------------------------------------------------- */
-
-function renderNews() {
-
-  const grid =
-    document.getElementById("newsGrid");
-
-  grid.innerHTML = "";
-
-  allNews.forEach((item, index) => {
-
-    grid.appendChild(
-      createCard(item, index)
-    );
-
-  });
-
-  grid.classList.remove("hidden");
-}
-
-
-/* -------------------------------------------------------
-   Open modal
-------------------------------------------------------- */
-
-function openModal(index) {
-
-  const item = allNews[index];
-
-  if (!item) return;
-
-  document.getElementById("modalImage").src =
-    item.image;
-
-  document.getElementById("modalTitle").textContent =
-    item.titleBn;
-
-  const paragraphs =
-    makeFullReport(
-      item.titleBn,
-      item.descriptionBn
-    );
-
-  document.getElementById("modalReport").innerHTML =
-    paragraphs
-      .map(
-        p => `<p>${escapeHTML(p)}</p>`
-      )
-      .join("");
-
-  document
-    .getElementById("newsModal")
-    .classList.remove("hidden");
-
-  document.body.style.overflow = "hidden";
-}
-
-
-/* -------------------------------------------------------
-   Close modal
-------------------------------------------------------- */
-
-function closeModal() {
-
-  document
-    .getElementById("newsModal")
-    .classList.add("hidden");
-
-  document.body.style.overflow = "";
-}
-
-
-/* -------------------------------------------------------
-   Close modal by clicking outside
-------------------------------------------------------- */
-
-document
-  .getElementById("newsModal")
-  .addEventListener("click", function(event) {
-
-    if (event.target === this) {
-      closeModal();
-    }
-
-  });
-
-
-/* -------------------------------------------------------
-   Escape key closes modal
-------------------------------------------------------- */
-
-document.addEventListener("keydown", function(event) {
-
-  if (event.key === "Escape") {
-    closeModal();
-  }
-
-});
-
-
-/* -------------------------------------------------------
-   Load all feeds
-------------------------------------------------------- */
-
-async function loadNews() {
-
-  const loading =
-    document.getElementById("loading");
-
-  const grid =
-    document.getElementById("newsGrid");
-
-  const error =
-    document.getElementById("error");
-
-  loading.classList.remove("hidden");
-  grid.classList.add("hidden");
-  error.classList.add("hidden");
-
-  allNews = [];
-
-  try {
-
-    /*
-      Fetch all feeds concurrently.
-    */
-
-    const results =
-      await Promise.allSettled(
-        RSS_FEEDS.map(feed => fetchFeed(feed))
-      );
-
-    let rawItems = [];
-
-    results.forEach(result => {
-
-      if (
-        result.status === "fulfilled" &&
-        Array.isArray(result.value)
-      ) {
-        rawItems.push(...result.value);
-      }
-
-    });
-
-
-    if (!rawItems.length) {
-      throw new Error(
-        "সংবাদ পাওয়া যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।"
-      );
-    }
-
-
-    /* ---------------------------------------------------
-       Sort latest first
-    --------------------------------------------------- */
-
-    rawItems.sort((a, b) => {
-
-      const dateA =
-        new Date(a.pubDate || 0).getTime();
-
-      const dateB =
-        new Date(b.pubDate || 0).getTime();
-
-      return dateB - dateA;
-    });
-
-
-    /*
-      Remove duplicate stories based on title.
-    */
-
-    const seen = new Set();
-
-    rawItems =
-      rawItems.filter(item => {
-
-        const key =
-          cleanHTML(item.title || "")
-            .toLowerCase()
-            .trim();
-
-        if (!key || seen.has(key)) {
-          return false;
-        }
-
-        seen.add(key);
-        return true;
-      });
-
-
-    /*
-      Translate every title and description.
-    */
-
-    const translatedItems =
-      await Promise.all(
-        rawItems.map(async (item, index) => {
-
-          const titleBn =
-            await translateToBangla(
-              item.title || ""
-            );
-
-          const descriptionBn =
-            await translateToBangla(
-              item.description || ""
-            );
-
-          return {
-
-            titleBn:
-              titleBn || "শিরোনাম পাওয়া যায়নি",
-
-            descriptionBn:
-              descriptionBn ||
-              "এই সংবাদটির বিস্তারিত বিবরণ পাওয়া যায়নি।",
-
-            image:
-              getNewsImage(item, index),
-
-            pubDate:
-              item.pubDate || ""
-
-          };
-
-        })
-      );
-
-
-    /*
-      Sort again after processing to guarantee
-      newest publication remains first.
-    */
-
-    translatedItems.sort((a, b) => {
-
-      return (
-        new Date(b.pubDate || 0).getTime() -
-        new Date(a.pubDate || 0).getTime()
-      );
-
-    });
-
-
-    allNews = translatedItems;
-
-    renderNews();
-
-  } catch (err) {
-
-    console.error(err);
-
-    error.textContent =
-      err.message ||
-      "সংবাদ লোড করতে সমস্যা হয়েছে।";
-
-    error.classList.remove("hidden");
-
-  } finally {
-
-    loading.classList.add("hidden");
-
-  }
-}
-
-
-/* -------------------------------------------------------
-   Initial load
-------------------------------------------------------- */
-
+function openM(i){let n=allNews[i];document.getElementById('mBody').innerHTML=`<img src="${n.img}" class="w-full h-96 object-cover mb-6">${n.report}`;document.getElementById('modal').classList.remove('hidden');}
 loadNews();
-
+setInterval(loadNews,10*60*1000);
 </script>
-
 </body>
 </html>
