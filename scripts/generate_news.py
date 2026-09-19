@@ -24,18 +24,12 @@ MAX_TOTAL = 20
 
 
 FEEDS = {
-    "বাংলাদেশ":
-        "https://news.google.com/rss/search?q=Bangladesh&hl=bn&gl=BD&ceid=BD:bn",
-
-    "বিশ্ব":
-        "https://news.google.com/rss/search?q=World+News&hl=en-US&gl=US&ceid=US:en",
-
-    "খেলা":
-        "https://news.google.com/rss/search?q=Sports&hl=en-US&gl=US&ceid=US:en",
-
-    "প্রযুক্তি":
-        "https://news.google.com/rss/search?q=Technology&hl=en-US&gl=US&ceid=US:en"
+    "বাংলাদেশ": "https://www.prothomalo.com/feed",
+    "বিশ্ব": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "খেলা": "https://feeds.bbci.co.uk/sport/rss.xml",
+    "প্রযুক্তি": "https://www.wired.com/feed/rss"
 }
+
 
 
 # =========================================================
