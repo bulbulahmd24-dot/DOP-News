@@ -7,23 +7,14 @@ import requests
 import feedparser
 
 
-# =========================================================
-# SETTINGS
-# =========================================================
-
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-
 MODEL = "gpt-5.6-luna"
 
 NEWS_FILE = "news.json"
 
-MAX_ARTICLES_PER_CATEGORY = 5
-MAX_TOTAL_ARTICLES = 40
+MAX_PER_CATEGORY = 5
+MAX_TOTAL = 40
 
-
-# =========================================================
-# RSS FEEDS
-# =========================================================
 
 FEEDS = {
     "বাংলাদেশ": "https://news.google.com/rss/search?q=Bangladesh&hl=bn&gl=BD&ceid=BD:bn",
@@ -32,10 +23,6 @@ FEEDS = {
     "প্রযুক্তি": "https://news.google.com/rss/search?q=Technology&hl=en-US&gl=US&ceid=US:en",
 }
 
-
-# =========================================================
-# LOAD NEWS
-# =========================================================
 
 def load_news():
     if not os.path.exists(NEWS_FILE):
@@ -49,7 +36,7 @@ def load_news():
             data = json.load(f)
 
         if not isinstance(data, dict):
-            raise ValueError("news.json format ভুল")
+            return {"updated_at": "", "articles": []}
 
         if "articles" not in data:
             data["articles"] = []
@@ -57,88 +44,95 @@ def load_news():
         return data
 
     except Exception as e:
-        print("news.json পড়তে সমস্যা:", e)
-
+        print("news.json read error:", e)
         return {
             "updated_at": "",
             "articles": []
         }
 
 
-# =========================================================
-# SAVE NEWS
-# =========================================================
-
 def save_news(data):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+
     with open(NEWS_FILE, "w", encoding="utf-8") as f:
-        json.dump(
-            data,
-            f,
-            ensure_ascii=False,
-            indent=2
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    print("news.json saved successfully.")
+    print("Total articles:", len(data.get("articles", [])))
+
+
+def make_id(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def clean_html(text):
+    if not text:
+        return ""
+
+    import re
+
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
+
+
+def get_rss_items(url):
+    print("Reading RSS:", url)
+
+    try:
+        response = requests.get(
+            url,
+            timeout=30,
+            headers={
+                "User-Agent": "Mozilla/5.0 DOP-News-24"
+            }
         )
 
+        response.raise_for_status()
 
-# =========================================================
-# CREATE ID
-# =========================================================
+        feed = feedparser.parse(response.content)
 
-def article_id(text):
-    return hashlib.sha256(
-        text.strip().lower().encode("utf-8")
-    ).hexdigest()[:16]
+        print("RSS items found:", len(feed.entries))
+
+        return feed.entries
+
+    except Exception as e:
+        print("RSS ERROR:", e)
+        return []
 
 
-# =========================================================
-# AI REWRITE
-# =========================================================
-
-def rewrite_with_ai(category, title, description):
-
+def rewrite_with_ai(title, description, category):
     if not OPENAI_API_KEY:
-        raise RuntimeError(
-            "OPENAI_API_KEY পাওয়া যায়নি।"
-        )
-
-    url = "https://api.openai.com/v1/responses"
+        print("OPENAI_API_KEY not found.")
+        return None
 
     prompt = f"""
-তুমি DOP NEWS 24-এর একজন পেশাদার বাংলা সংবাদ সম্পাদক।
+তুমি DOP NEWS 24-এর বাংলা সংবাদ সম্পাদক।
 
-তোমাকে একটি RSS সংবাদ শিরোনাম ও সংক্ষিপ্ত বিবরণ দেওয়া হচ্ছে।
-শুধুমাত্র দেওয়া তথ্যের ভিত্তিতে সম্পূর্ণ নতুন ভাষায় একটি সংক্ষিপ্ত বাংলা সংবাদ তৈরি করো।
+ক্যাটাগরি: {category}
 
-বিভাগ:
-{category}
-
-মূল শিরোনাম:
+মূল সংবাদ শিরোনাম:
 {title}
 
-মূল বিবরণ:
+RSS থেকে পাওয়া সংক্ষিপ্ত তথ্য:
 {description}
 
-কঠোর নিয়ম:
+নির্দেশনা:
+- বাংলায় নতুন করে সংবাদটি লিখবে।
+- তথ্যের বাইরে কোনো ঘটনা, সংখ্যা, নাম, উদ্ধৃতি বা দাবি বানাবে না।
+- মূল লেখার বাক্য কপি করবে না।
+- 2 থেকে 4টি ছোট অনুচ্ছেদ লিখবে।
+- রাজনৈতিক সংবাদ হলে সম্পূর্ণ নিরপেক্ষ ভাষা ব্যবহার করবে।
+- কোনো ওয়েবসাইটের নাম লিখবে না।
+- source URL লিখবে না।
 
-1. মূল লেখার কোনো বাক্য হুবহু কপি করবে না।
-2. বাক্য ধরে ধরে অনুবাদ করবে না।
-3. সম্পূর্ণ নতুন বাক্য ও স্বাভাবিক সংবাদভাষা ব্যবহার করবে।
-4. দেওয়া তথ্যের বাইরে কোনো তথ্য যোগ করবে না।
-5. কোনো তথ্য অনুমান করবে না।
-6. কাল্পনিক ব্যক্তি, সংখ্যা, ঘটনা বা উদ্ধৃতি তৈরি করবে না।
-7. রাজনৈতিক সংবাদ হলে সম্পূর্ণ নিরপেক্ষ ভাষা ব্যবহার করবে।
-8. নতুন ও স্বাভাবিক বাংলা শিরোনাম তৈরি করবে।
-9. সংবাদটি ২ থেকে ৪টি ছোট অনুচ্ছেদে লিখবে।
-10. ওয়েবসাইটের নাম বা URL সংবাদে লিখবে না।
-11. তথ্যভিত্তিক ও সহজবোধ্য ভাষা ব্যবহার করবে।
-12. অতিরঞ্জিত বা ক্লিকবেইট শিরোনাম ব্যবহার করবে না।
-
-শুধু নির্ধারিত JSON schema অনুযায়ী উত্তর দাও।
+শুধু JSON দেবে:
+{{
+  "title": "নতুন বাংলা শিরোনাম",
+  "summary": "নতুনভাবে লেখা সংবাদ"
+}}
 """
-
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
 
     payload = {
         "model": MODEL,
@@ -168,300 +162,222 @@ def rewrite_with_ai(category, title, description):
         }
     }
 
-    response = requests.post(
-        url,
-        headers=headers,
-        json=payload,
-        timeout=120
-    )
-
-    if not response.ok:
-        print("OpenAI API Error:", response.status_code)
-        print(response.text[:3000])
-        response.raise_for_status()
-
-    result = response.json()
-
-    # =====================================================
-    # GET TEXT FROM RESPONSES API
-    # =====================================================
-
-    text = ""
-
-    for output_item in result.get("output", []):
-
-        if output_item.get("type") != "message":
-            continue
-
-        for content_item in output_item.get("content", []):
-
-            if content_item.get("type") == "output_text":
-
-                text = content_item.get("text", "")
-                break
-
-        if text:
-            break
-
-    if not text:
-        raise ValueError(
-            "OpenAI কোনো output text ফেরত দেয়নি।"
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=90
         )
 
-    text = text.strip()
+        print("OpenAI status:", response.status_code)
 
-    try:
-        return json.loads(text)
+        if response.status_code != 200:
+            print("OPENAI ERROR:")
+            print(response.text[:2000])
+            return None
 
-    except json.JSONDecodeError:
+        result = response.json()
 
-        print("AI response JSON ছিল না:")
-        print(text[:3000])
+        output_text = ""
 
-        raise
+        for output in result.get("output", []):
+            if output.get("type") == "message":
+                for content in output.get("content", []):
+                    if content.get("type") == "output_text":
+                        output_text += content.get("text", "")
+
+        if not output_text:
+            print("OpenAI returned no text.")
+            return None
+
+        parsed = json.loads(output_text)
+
+        if not parsed.get("title") or not parsed.get("summary"):
+            return None
+
+        return parsed
+
+    except Exception as e:
+        print("AI ERROR:", e)
+        return None
 
 
-# =========================================================
-# IMAGE
-# =========================================================
+def fallback_article(title, description):
+    """
+    AI কাজ না করলেও যাতে সংবাদ ওয়েবসাইটে দেখা যায়।
+    """
+
+    description = clean_html(description)
+
+    if not description:
+        description = title
+
+    return {
+        "title": title.strip(),
+        "summary": description.strip()
+    }
+
 
 def get_image(entry):
-
     try:
-
         media = entry.get("media_content")
 
-        if media:
+        if media and isinstance(media, list):
             for item in media:
                 if item.get("url"):
                     return item["url"]
 
         thumbnail = entry.get("media_thumbnail")
 
-        if thumbnail:
-            for item in thumbnail:
-                if item.get("url"):
-                    return item["url"]
+        if thumbnail and isinstance(thumbnail, list):
+            if thumbnail[0].get("url"):
+                return thumbnail[0]["url"]
 
-    except Exception as e:
+    except Exception:
+        pass
 
-        print("Image পাওয়া যায়নি:", e)
+    return "https://picsum.photos/800/450"
 
-    return "https://picsum.photos/900/500"
-
-
-# =========================================================
-# MAIN
-# =========================================================
 
 def main():
 
-    print("")
-    print("=" * 60)
-    print("DOP NEWS 24 - AI NEWS GENERATOR")
-    print("=" * 60)
-    print("")
-
-    if not OPENAI_API_KEY:
-        raise RuntimeError(
-            "OPENAI_API_KEY পাওয়া যায়নি। "
-            "GitHub Settings → Secrets and variables → Actions "
-            "থেকে OPENAI_API_KEY সেট করুন।"
-        )
+    print("====================================")
+    print("DOP NEWS 24 AUTO NEWS STARTED")
+    print("====================================")
 
     data = load_news()
 
-    existing_ids = {
-        article.get("source_id")
-        for article in data.get("articles", [])
-        if article.get("source_id")
-    }
+    old_articles = data.get("articles", [])
+
+    existing_ids = set()
+
+    for article in old_articles:
+        if article.get("source_id"):
+            existing_ids.add(article["source_id"])
 
     new_articles = []
-
-    # =====================================================
-    # EACH CATEGORY
-    # =====================================================
 
     for category, feed_url in FEEDS.items():
 
         print("")
-        print(f"সংবাদ সংগ্রহ করা হচ্ছে: {category}")
+        print("CATEGORY:", category)
 
-        try:
-            feed = feedparser.parse(feed_url)
+        entries = get_rss_items(feed_url)
 
-        except Exception as e:
-
-            print("RSS Error:", e)
+        if not entries:
+            print("No RSS entries for:", category)
             continue
 
-        if not feed.entries:
+        category_count = 0
 
-            print("এই বিভাগে RSS সংবাদ পাওয়া যায়নি।")
-            continue
+        for entry in entries[:10]:
 
-        count = 0
-
-        # প্রতি category থেকে সর্বোচ্চ ১০টি source পরীক্ষা
-        for entry in feed.entries[:10]:
-
-            if count >= MAX_ARTICLES_PER_CATEGORY:
+            if category_count >= MAX_PER_CATEGORY:
                 break
 
-            original_title = (
+            title = clean_html(
                 entry.get("title", "")
-                .strip()
             )
 
-            description = (
-                entry.get(
-                    "summary",
-                    entry.get("description", "")
-                )
-                .strip()
+            description = clean_html(
+                entry.get("summary", "")
             )
 
-            if not original_title:
+            link = entry.get("link", "")
+
+            if not title:
                 continue
 
-            source_id = article_id(original_title)
+            source_id = make_id(
+                title + "|" + link
+            )
 
-            # আগে নেওয়া সংবাদ বাদ
             if source_id in existing_ids:
-
-                print(
-                    "Duplicate বাদ:",
-                    original_title
-                )
-
+                print("Duplicate:", title)
                 continue
 
-            print(
-                "AI দিয়ে তৈরি হচ্ছে:",
-                original_title
+            print("Processing:", title)
+
+            # প্রথমে AI দিয়ে লিখবে
+            ai_article = rewrite_with_ai(
+                title,
+                description,
+                category
             )
 
-            try:
-
-                ai_article = rewrite_with_ai(
-                    category,
-                    original_title,
+            # AI কাজ করলে AI লেখা
+            # না করলে RSS তথ্য দিয়ে fallback
+            if ai_article:
+                article_title = ai_article["title"]
+                article_summary = ai_article["summary"]
+                print("AI article created.")
+            else:
+                fallback = fallback_article(
+                    title,
                     description
                 )
 
-                title = (
-                    ai_article
-                    .get("title", "")
-                    .strip()
-                )
+                article_title = fallback["title"]
+                article_summary = fallback["summary"]
 
-                summary = (
-                    ai_article
-                    .get("summary", "")
-                    .strip()
-                )
+                print("Fallback RSS article created.")
 
-                if not title or not summary:
+            article = {
+                "id": make_id(
+                    source_id + str(datetime.now())
+                ),
 
-                    print(
-                        "AI title/summary দেয়নি।"
-                    )
+                "source_id": source_id,
 
-                    continue
+                "category": category,
 
-                now = datetime.now(
+                "title": article_title,
+
+                "summary": article_summary,
+
+                "image": get_image(entry),
+
+                "published_at": datetime.now(
                     timezone.utc
-                ).isoformat()
+                ).isoformat(),
 
-                article = {
+                "source_url": link
+            }
 
-                    "id": article_id(
-                        title + now
-                    ),
+            new_articles.append(article)
 
-                    "source_id": source_id,
+            existing_ids.add(source_id)
 
-                    "category": category,
+            category_count += 1
 
-                    "title": title,
+            if len(new_articles) >= MAX_TOTAL:
+                break
 
-                    "summary": summary,
+        if len(new_articles) >= MAX_TOTAL:
+            break
 
-                    "image": get_image(entry),
+    print("")
+    print("New articles:", len(new_articles))
 
-                    "published_at": now
-                }
+    # নতুন সংবাদ সামনে
+    all_articles = new_articles + old_articles
 
-                new_articles.append(article)
+    # সর্বোচ্চ 40টি
+    all_articles = all_articles[:MAX_TOTAL]
 
-                existing_ids.add(source_id)
-
-                count += 1
-
-                print(
-                    "✅ নতুন সংবাদ:",
-                    title
-                )
-
-            except Exception as e:
-
-                print(
-                    "❌ AI processing error:",
-                    e
-                )
-
-                continue
-
-    # =====================================================
-    # SAVE
-    # =====================================================
-
-    old_articles = data.get(
-        "articles",
-        []
-    )
-
-    data["articles"] = (
-        new_articles +
-        old_articles
-    )
-
-    # সর্বোচ্চ ৪০টি সংবাদ
-    data["articles"] = (
-        data["articles"]
-        [:MAX_TOTAL_ARTICLES]
-    )
-
-    data["updated_at"] = (
-        datetime.now(
-            timezone.utc
-        ).isoformat()
-    )
+    data["articles"] = all_articles
 
     save_news(data)
 
     print("")
-    print("=" * 60)
+    print("====================================")
+    print("DOP NEWS 24 AUTO NEWS FINISHED")
+    print("====================================")
 
-    print("✅ কাজ সম্পন্ন")
-
-    print(
-        f"নতুন সংবাদ যোগ হয়েছে: "
-        f"{len(new_articles)}"
-    )
-
-    print(
-        f"মোট সংবাদ: "
-        f"{len(data['articles'])}"
-    )
-
-    print("=" * 60)
-
-
-# =========================================================
-# RUN
-# =========================================================
 
 if __name__ == "__main__":
     main()
