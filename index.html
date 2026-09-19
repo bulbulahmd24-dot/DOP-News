@@ -23,7 +23,6 @@
   <p id="time" class="text-center text-xs text-gray-400 mt-10"></p>
 </main>
 
-<!-- বিস্তারিত Modal -->
 <div id="modal" class="hidden fixed inset-0 z-[999] bg-black/80 p-4 overflow-y-auto">
   <div class="max-w-3xl mx-auto bg-white min-h-screen">
     <div class="flex justify-between items-center p-4 border-b sticky top-0 bg-white">
@@ -36,66 +35,89 @@
 
 <script>
 let allNews=[];
+async function fetchWithProxy(url){
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`
+  ];
+  for(let p of proxies){
+    try{
+      let r = await fetch(p + '&_t=' + Date.now());
+      if(r.ok){ let t = await r.text(); if(t.includes('<item>')) return t; }
+    }catch(e){}
+  }
+  throw new Error('all proxy failed');
+}
+
 async function load(){
   try{
-    let api = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.jagonews24.com/rss/rss.xml')}?t=${Date.now()}`;
-    let r = await fetch(api);
-    let text = await r.text();
+    let rssUrl = 'https://www.jagonews24.com/rss/rss.xml';
+    let text = await fetchWithProxy(rssUrl);
     let doc = new DOMParser().parseFromString(text,"text/xml");
-    let items = Array.from(doc.querySelectorAll("item")).slice(0,12).map(it=>({
-      title: it.querySelector("title")?.textContent||"",
-      desc: it.querySelector("description")?.textContent||"",
-      link: it.querySelector("link")?.textContent||"#",
-      img: it.querySelector("enclosure")?.getAttribute("url") || `https://picsum.photos/seed/${Math.random()}/800/500`,
-      pubDate: it.querySelector("pubDate")?.textContent||""
-    }));
+    let items = Array.from(doc.querySelectorAll("item")).slice(0,12).map(it=>{
+      let desc = it.querySelector("description")?.textContent||"";
+      // ছবি বের করার চেষ্টা
+      let imgMatch = desc.match(/<img[^>]+src="([^">]+)"/);
+      let img = it.querySelector("enclosure")?.getAttribute("url") || (imgMatch?imgMatch[1]:`https://picsum.photos/seed/${Math.floor(Math.random()*1000)}/800/500`);
+      return {
+        title: it.querySelector("title")?.textContent||"",
+        desc: desc,
+        link: it.querySelector("link")?.textContent||"#",
+        img: img,
+        pubDate: it.querySelector("pubDate")?.textContent||""
+      }
+    });
     if(items.length==0) throw new Error();
     allNews = items;
     document.getElementById('ticker').innerText = items.map(x=>x.title).join(' ••• ');
 
     document.getElementById('lead').innerHTML = `
       <div class="md:col-span-8 cursor-pointer" onclick="openM(0)">
-        <img src="${items[0].img}" class="w-full h-[420px] object-cover">
+        <img src="${items[0].img}" class="w-full h-[420px] object-cover bg-gray-100">
         <h2 class="text-[34px] font-black leading-tight mt-4 hover:text-red-600">${items[0].title}</h2>
       </div>
       <div class="md:col-span-4">${items.slice(1,5).map((n,i)=>`
         <div onclick="openM(${i+1})" class="flex gap-3 border-b pb-4 mb-4 cursor-pointer hover:bg-gray-50">
-          <img src="${n.img}" class="w-24 h-20 object-cover"><h3 class="font-bold text-[16px]">${n.title}</h3>
+          <img src="${n.img}" class="w-24 h-20 object-cover bg-gray-100"><h3 class="font-bold text-[16px] leading-tight">${n.title}</h3>
         </div>`).join('')}</div>`;
 
     document.getElementById('grid').innerHTML = items.slice(5).map((n,i)=>`
       <div onclick="openM(${i+5})" class="cursor-pointer group">
-        <img src="${n.img}" class="w-full h-48 object-cover">
-        <h3 class="font-black mt-3 text-[18px] group-hover:text-red-600">${n.title}</h3>
+        <img src="${n.img}" class="w-full h-48 object-cover bg-gray-100">
+        <h3 class="font-black mt-3 text-[18px] group-hover:text-red-600 leading-tight">${n.title}</h3>
       </div>`).join('');
 
     document.getElementById('time').innerText = "শেষ আপডেট: "+new Date().toLocaleTimeString('bn-BD');
+
   }catch(e){
-    document.getElementById('lead').innerHTML = "<p class='text-center py-20'>ফিড লোড হয়নি, ১ মিনিট পর আবার চেষ্টা করুন</p>";
+    console.log(e);
+    document.getElementById('ticker').innerText = 'অস্থায়ী সমস্যার জন্য সংবাদ লোড হচ্ছে না, রিফ্রেশ করুন...';
+    document.getElementById('lead').innerHTML = `<div class="col-span-12 text-center py-20">
+      <p class="text-xl font-bold mb-4">ফিড লোড হয়নি</p>
+      <p class="text-gray-500 mb-4">Jagonews24 সার্ভার ব্যস্ত আছে।</p>
+      <button onclick="load()" class="bg-[#c00] text-white px-6 py-2 rounded">আবার চেষ্টা করুন</button>
+    </div>`;
   }
 }
 
 function openM(i){
-  let n = allNews[i];
-  if(!n) return;
+  let n = allNews[i]; if(!n) return;
   document.getElementById('mBody').innerHTML = `
-    <img src="${n.img}" class="w-full h-[400px] object-cover mb-6">
+    <img src="${n.img}" class="w-full h-[400px] object-cover mb-6 bg-gray-100">
     <h1 class="text-3xl font-black leading-tight mb-3">${n.title}</h1>
     <p class="text-xs text-gray-500 mb-6">${n.pubDate} | DOP News 24</p>
     <div class="text-[19px] leading-9 text-justify">${n.desc}</div>
     <div class="mt-8 p-4 bg-gray-100 text-center">
       <a href="${n.link}" target="_blank" class="bg-red-600 text-white px-6 py-2 inline-block font-bold">মূল সাইটে বিস্তারিত পড়ুন →</a>
-    </div>
-  `;
+    </div>`;
   document.getElementById('modal').classList.remove('hidden');
   document.body.style.overflow='hidden';
-  window.scrollTo(0,0);
 }
 function closeM(){
   document.getElementById('modal').classList.add('hidden');
   document.body.style.overflow='auto';
 }
-
 load();
 setInterval(load, 10*60*1000);
 </script>
