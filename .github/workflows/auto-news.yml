@@ -1,0 +1,49 @@
+name: DOP News Auto Publisher
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 2 * * *"
+    - cron: "0 8 * * *"
+    - cron: "0 14 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  generate-news:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install requests feedparser
+
+      - name: Generate AI news
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python scripts/generate_news.py
+
+      - name: Save news.json
+        run: |
+          git config user.name "DOP News Bot"
+          git config user.email "actions@github.com"
+
+          git add news.json
+
+          if git diff --cached --quiet; then
+            echo "No new news"
+          else
+            git commit -m "Auto update news"
+            git push
+          fi
