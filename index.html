@@ -1,1127 +1,383 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+import os
+import json
+import hashlib
+from datetime import datetime, timezone
 
-  <title>DOP NEWS 24 | সর্বশেষ বাংলা সংবাদ</title>
+import requests
+import feedparser
 
-  <meta name="description"
-        content="DOP NEWS 24 - বাংলাদেশ, বিশ্ব, খেলা ও প্রযুক্তির সর্বশেষ সংবাদ।">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+MODEL = "gpt-5.6-luna"
 
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+NEWS_FILE = "news.json"
 
-  <style>
+MAX_PER_CATEGORY = 5
+MAX_TOTAL = 40
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
 
-    body {
-      font-family: "Noto Sans Bengali", Arial, sans-serif;
-      background: #f4f6f8;
-      color: #111827;
-    }
+FEEDS = {
+    "বাংলাদেশ": "https://news.google.com/rss/search?q=Bangladesh&hl=bn&gl=BD&ceid=BD:bn",
+    "বিশ্ব": "https://news.google.com/rss/search?q=World+News&hl=en-US&gl=US&ceid=US:en",
+    "খেলা": "https://news.google.com/rss/search?q=Sports&hl=en-US&gl=US&ceid=US:en",
+    "প্রযুক্তি": "https://news.google.com/rss/search?q=Technology&hl=en-US&gl=US&ceid=US:en",
+}
 
-    a {
-      text-decoration: none;
-      color: inherit;
-    }
 
-    .container {
-      width: min(1200px, 94%);
-      margin: auto;
-    }
-
-    /* HEADER */
-
-    header {
-      background: #b91c1c;
-      color: white;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      box-shadow: 0 3px 12px rgba(0,0,0,.15);
-    }
-
-    .header-inner {
-      min-height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .logo {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: .5px;
-    }
-
-    .logo span {
-      color: #fde68a;
-    }
-
-    .menu {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .menu button {
-      border: 0;
-      background: transparent;
-      color: white;
-      padding: 9px 13px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 15px;
-    }
-
-    .menu button:hover,
-    .menu button.active {
-      background: rgba(255,255,255,.18);
-    }
-
-    /* TICKER */
-
-    .ticker {
-      background: #111827;
-      color: white;
-      overflow: hidden;
-    }
-
-    .ticker-inner {
-      min-height: 42px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .ticker-label {
-      background: #dc2626;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    #tickerText {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 14px;
-    }
-
-    /* MAIN */
-
-    main {
-      padding: 25px 0 50px;
-    }
-
-    .status {
-      background: white;
-      border-radius: 12px;
-      padding: 15px 18px;
-      margin-bottom: 22px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      font-size: 14px;
-    }
-
-    .hero {
-      background: linear-gradient(135deg,#7f1d1d,#dc2626);
-      color: white;
-      border-radius: 16px;
-      padding: 30px;
-      margin-bottom: 25px;
-    }
-
-    .hero h1 {
-      font-size: clamp(28px,5vw,48px);
-      line-height: 1.25;
-      margin-bottom: 10px;
-    }
-
-    .hero p {
-      opacity: .92;
-      line-height: 1.8;
-    }
-
-    /* NEWS GRID */
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 25px 0 15px;
-    }
-
-    .section-title h2 {
-      font-size: 24px;
-    }
-
-    .news-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 3px 12px rgba(0,0,0,.07);
-      transition: .2s;
-      cursor: pointer;
-    }
-
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 22px rgba(0,0,0,.12);
-    }
-
-    .card-image {
-      width: 100%;
-      height: 190px;
-      object-fit: cover;
-      display: block;
-      background: #e5e7eb;
-    }
-
-    .card-body {
-      padding: 17px;
-    }
-
-    .category {
-      display: inline-block;
-      color: #b91c1c;
-      background: #fee2e2;
-      border-radius: 5px;
-      padding: 3px 8px;
-      font-size: 12px;
-      font-weight: 700;
-      margin-bottom: 9px;
-    }
-
-    .card-title {
-      font-size: 19px;
-      line-height: 1.5;
-      font-weight: 700;
-      margin-bottom: 9px;
-    }
-
-    .card-summary {
-      color: #4b5563;
-      font-size: 14px;
-      line-height: 1.8;
-    }
-
-    .date {
-      color: #6b7280;
-      font-size: 12px;
-      margin-top: 12px;
-    }
-
-    /* EMPTY / ERROR */
-
-    .message {
-      background: white;
-      border-radius: 14px;
-      padding: 45px 20px;
-      text-align: center;
-      color: #4b5563;
-      grid-column: 1 / -1;
-    }
-
-    .message strong {
-      display: block;
-      color: #111827;
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-
-    /* MODAL */
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.72);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 2000;
-    }
-
-    .modal.show {
-      display: flex;
-    }
-
-    .modal-box {
-      width: min(800px,100%);
-      max-height: 90vh;
-      overflow-y: auto;
-      background: white;
-      border-radius: 16px;
-      position: relative;
-    }
-
-    .modal-image {
-      width: 100%;
-      max-height: 380px;
-      object-fit: cover;
-    }
-
-    .modal-content {
-      padding: 25px;
-    }
-
-    .modal-content h2 {
-      font-size: 27px;
-      line-height: 1.45;
-      margin-bottom: 15px;
-    }
-
-    .modal-content p {
-      line-height: 2;
-      color: #374151;
-      white-space: pre-line;
-    }
-
-    .close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 40px;
-      height: 40px;
-      border: 0;
-      border-radius: 50%;
-      background: rgba(0,0,0,.65);
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-      z-index: 5;
-    }
-
-    /* FOOTER */
-
-    footer {
-      background: #111827;
-      color: #d1d5db;
-      text-align: center;
-      padding: 25px 15px;
-      margin-top: 30px;
-      font-size: 14px;
-    }
-
-    /* MOBILE */
-
-    @media (max-width: 850px) {
-
-      .header-inner {
-        flex-direction: column;
-        padding: 13px 0;
-      }
-
-      .menu {
-        justify-content: center;
-      }
-
-      .news-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 600px) {
-
-      .logo {
-        font-size: 24px;
-      }
-
-      .news-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hero {
-        padding: 23px;
-      }
-
-      .card-image {
-        height: 210px;
-      }
-
-      .modal-content h2 {
-        font-size: 22px;
-      }
-    }
-
-  </style>
-</head>
-
-<body>
-
-<!-- HEADER -->
-
-<header>
-
-  <div class="container header-inner">
-
-    <div class="logo">
-      DOP <span>NEWS 24</span>
-    </div>
-
-    <nav class="menu">
-
-      <button class="active" data-category="সব">
-        সব
-      </button>
-
-      <button data-category="বাংলাদেশ">
-        বাংলাদেশ
-      </button>
-
-      <button data-category="বিশ্ব">
-        বিশ্ব
-      </button>
-
-      <button data-category="খেলা">
-        খেলা
-      </button>
-
-      <button data-category="প্রযুক্তি">
-        প্রযুক্তি
-      </button>
-
-    </nav>
-
-  </div>
-
-</header>
-
-
-<!-- TICKER -->
-
-<div class="ticker">
-
-  <div class="container ticker-inner">
-
-    <div class="ticker-label">
-      ব্রেকিং
-    </div>
-
-    <div id="tickerText">
-      সর্বশেষ সংবাদ লোড হচ্ছে...
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- MAIN -->
-
-<main>
-
-  <div class="container">
-
-    <div class="status" id="status">
-      📰 সর্বশেষ সংবাদ লোড হচ্ছে...
-    </div>
-
-
-    <section class="hero">
-
-      <h1>
-        DOP NEWS 24
-      </h1>
-
-      <p>
-        বাংলাদেশ, বিশ্ব, খেলা ও প্রযুক্তির সর্বশেষ সংবাদ।
-        নিয়মিত আপডেট পেতে আমাদের সঙ্গে থাকুন।
-      </p>
-
-    </section>
-
-
-    <div class="section-title">
-
-      <h2 id="sectionTitle">
-        সর্বশেষ সংবাদ
-      </h2>
-
-    </div>
-
-
-    <div id="newsGrid" class="news-grid">
-
-      <div class="message">
-
-        <strong>
-          সংবাদ লোড হচ্ছে...
-        </strong>
-
-        অনুগ্রহ করে একটু অপেক্ষা করুন।
-
-      </div>
-
-    </div>
-
-  </div>
-
-</main>
-
-
-<!-- MODAL -->
-
-<div id="modal" class="modal">
-
-  <div class="modal-box">
-
-    <button
-      class="close"
-      id="closeModal"
-      aria-label="বন্ধ করুন">
-      ×
-    </button>
-
-    <img
-      id="modalImage"
-      class="modal-image"
-      src=""
-      alt="সংবাদ ছবি">
-
-    <div class="modal-content">
-
-      <div
-        id="modalCategory"
-        class="category">
-      </div>
-
-      <h2 id="modalTitle"></h2>
-
-      <p id="modalSummary"></p>
-
-      <div
-        id="modalDate"
-        class="date">
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- FOOTER -->
-
-<footer>
-
-  © <span id="year"></span> DOP NEWS 24
-
-</footer>
-
-
-<script>
-
-  /* =====================================================
-     SETTINGS
-  ===================================================== */
-
-  const NEWS_URL =
-    "./news.json?cache=" + Date.now();
-
-
-  let allArticles = [];
-
-  let currentCategory = "সব";
-
-
-  /* =====================================================
-     ELEMENTS
-  ===================================================== */
-
-  const newsGrid =
-    document.getElementById("newsGrid");
-
-  const status =
-    document.getElementById("status");
-
-  const tickerText =
-    document.getElementById("tickerText");
-
-  const sectionTitle =
-    document.getElementById("sectionTitle");
-
-  const modal =
-    document.getElementById("modal");
-
-  const modalImage =
-    document.getElementById("modalImage");
-
-  const modalCategory =
-    document.getElementById("modalCategory");
-
-  const modalTitle =
-    document.getElementById("modalTitle");
-
-  const modalSummary =
-    document.getElementById("modalSummary");
-
-  const modalDate =
-    document.getElementById("modalDate");
-
-
-  document.getElementById("year").textContent =
-    new Date().getFullYear();
-
-
-  /* =====================================================
-     ESCAPE HTML
-  ===================================================== */
-
-  function escapeHTML(value) {
-
-    if (value === null || value === undefined) {
-      return "";
-    }
-
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-
-  /* =====================================================
-     DATE
-  ===================================================== */
-
-  function formatDate(dateValue) {
-
-    if (!dateValue) {
-      return "";
-    }
-
-    try {
-
-      const date =
-        new Date(dateValue);
-
-      if (isNaN(date.getTime())) {
-        return "";
-      }
-
-      return date.toLocaleString(
-        "bn-BD",
-        {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit"
-        }
-      );
-
-    } catch (error) {
-
-      return "";
-
-    }
-
-  }
-
-
-  /* =====================================================
-     IMAGE FALLBACK
-  ===================================================== */
-
-  function safeImage(url) {
-
-    if (
-      typeof url !== "string" ||
-      !url.trim()
-    ) {
-
-      return "https://picsum.photos/900/500";
-
-    }
-
-    return url;
-
-  }
-
-
-  /* =====================================================
-     LOAD NEWS
-  ===================================================== */
-
-  async function loadNews() {
-
-    try {
-
-      status.textContent =
-        "📰 সংবাদ লোড হচ্ছে...";
-
-      const response =
-        await fetch(NEWS_URL, {
-          cache: "no-store"
-        });
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          "news.json পাওয়া যায়নি। HTTP " +
-          response.status
-        );
-
-      }
-
-
-      const data =
-        await response.json();
-
-
-      if (
-        !data ||
-        !Array.isArray(data.articles)
-      ) {
-
-        throw new Error(
-          "news.json-এর articles পাওয়া যায়নি।"
-        );
-
-      }
-
-
-      allArticles =
-        data.articles;
-
-
-      if (allArticles.length === 0) {
-
-        newsGrid.innerHTML = `
-
-          <div class="message">
-
-            <strong>
-              এখনো কোনো সংবাদ নেই
-            </strong>
-
-            GitHub Actions থেকে
-            সংবাদ তৈরি হলে এখানে দেখা যাবে।
-
-          </div>
-
-        `;
-
-        status.textContent =
-          "⚠️ news.json-এ এখনো কোনো সংবাদ নেই।";
-
-        tickerText.textContent =
-          "এখনো কোনো সংবাদ প্রকাশিত হয়নি।";
-
-        return;
-
-      }
-
-
-      status.textContent =
-        "✅ মোট " +
-        allArticles.length +
-        "টি সংবাদ পাওয়া গেছে।";
-
-
-      if (data.updated_at) {
-
-        const updated =
-          formatDate(data.updated_at);
-
-        if (updated) {
-
-          status.textContent +=
-            " সর্বশেষ আপডেট: " +
-            updated;
-
+def load_news():
+    if not os.path.exists(NEWS_FILE):
+        return {
+            "updated_at": "",
+            "articles": []
         }
 
-      }
+    try:
+        with open(NEWS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
 
+        if not isinstance(data, dict):
+            return {"updated_at": "", "articles": []}
 
-      /* TICKER */
+        if "articles" not in data:
+            data["articles"] = []
 
-      tickerText.textContent =
-        allArticles[0]?.title ||
-        "সর্বশেষ সংবাদ";
+        return data
 
-
-      renderNews();
-
-    } catch (error) {
-
-      console.error(
-        "News loading error:",
-        error
-      );
-
-
-      newsGrid.innerHTML = `
-
-        <div class="message">
-
-          <strong>
-            ⚠️ সংবাদ লোড করা যাচ্ছে না
-          </strong>
-
-          ${escapeHTML(error.message)}
-
-          <br><br>
-
-          <button
-            onclick="loadNews()"
-            style="
-              padding:10px 18px;
-              border:0;
-              border-radius:7px;
-              background:#b91c1c;
-              color:white;
-              cursor:pointer;
-              font-family:inherit;
-            ">
-            আবার চেষ্টা করুন
-          </button>
-
-        </div>
-
-      `;
-
-      status.textContent =
-        "❌ সংবাদ লোড করতে সমস্যা হয়েছে।";
-
-    }
-
-  }
-
-
-  /* =====================================================
-     RENDER NEWS
-  ===================================================== */
-
-  function renderNews() {
-
-    let articles = allArticles;
-
-
-    if (currentCategory !== "সব") {
-
-      articles =
-        allArticles.filter(
-          article =>
-            article.category === currentCategory
-        );
-
-    }
-
-
-    sectionTitle.textContent =
-      currentCategory === "সব"
-        ? "সর্বশেষ সংবাদ"
-        : currentCategory + " সংবাদ";
-
-
-    if (articles.length === 0) {
-
-      newsGrid.innerHTML = `
-
-        <div class="message">
-
-          <strong>
-            এই বিভাগে কোনো সংবাদ নেই
-          </strong>
-
-          অন্য বিভাগ নির্বাচন করুন।
-
-        </div>
-
-      `;
-
-      return;
-
-    }
-
-
-    newsGrid.innerHTML =
-      articles.map(
-        (article, index) => {
-
-          const title =
-            escapeHTML(
-              article.title ||
-              "শিরোনাম নেই"
-            );
-
-          const summary =
-            escapeHTML(
-              article.summary ||
-              ""
-            );
-
-          const category =
-            escapeHTML(
-              article.category ||
-              ""
-            );
-
-          const image =
-            escapeHTML(
-              safeImage(article.image)
-            );
-
-          const date =
-            escapeHTML(
-              formatDate(
-                article.published_at
-              )
-            );
-
-
-          return `
-
-            <article
-              class="card"
-              data-index="${index}">
-
-              <img
-                class="card-image"
-                src="${image}"
-                alt="${title}"
-                loading="lazy"
-                onerror="
-                  this.onerror=null;
-                  this.src='https://picsum.photos/900/500';
-                ">
-
-              <div class="card-body">
-
-                <span class="category">
-                  ${category}
-                </span>
-
-                <h3 class="card-title">
-                  ${title}
-                </h3>
-
-                <p class="card-summary">
-                  ${summary}
-                </p>
-
-                <div class="date">
-                  ${date}
-                </div>
-
-              </div>
-
-            </article>
-
-          `;
-
+    except Exception as e:
+        print("news.json read error:", e)
+        return {
+            "updated_at": "",
+            "articles": []
         }
-      ).join("");
 
 
-    document
-      .querySelectorAll(".card")
-      .forEach(card => {
+def save_news(data):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-        card.addEventListener(
-          "click",
-          () => {
+    with open(NEWS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-            const index =
-              Number(
-                card.dataset.index
-              );
-
-            openModal(
-              articles[index]
-            );
-
-          }
-        );
-
-      });
-
-  }
+    print("news.json saved successfully.")
+    print("Total articles:", len(data.get("articles", [])))
 
 
-  /* =====================================================
-     MODAL
-  ===================================================== */
+def make_id(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
-  function openModal(article) {
 
-    if (!article) {
-      return;
+def clean_html(text):
+    if not text:
+        return ""
+
+    import re
+
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
+
+
+def get_rss_items(url):
+    print("Reading RSS:", url)
+
+    try:
+        response = requests.get(
+            url,
+            timeout=30,
+            headers={
+                "User-Agent": "Mozilla/5.0 DOP-News-24"
+            }
+        )
+
+        response.raise_for_status()
+
+        feed = feedparser.parse(response.content)
+
+        print("RSS items found:", len(feed.entries))
+
+        return feed.entries
+
+    except Exception as e:
+        print("RSS ERROR:", e)
+        return []
+
+
+def rewrite_with_ai(title, description, category):
+    if not OPENAI_API_KEY:
+        print("OPENAI_API_KEY not found.")
+        return None
+
+    prompt = f"""
+তুমি DOP NEWS 24-এর বাংলা সংবাদ সম্পাদক।
+
+ক্যাটাগরি: {category}
+
+মূল সংবাদ শিরোনাম:
+{title}
+
+RSS থেকে পাওয়া সংক্ষিপ্ত তথ্য:
+{description}
+
+নির্দেশনা:
+- বাংলায় নতুন করে সংবাদটি লিখবে।
+- তথ্যের বাইরে কোনো ঘটনা, সংখ্যা, নাম, উদ্ধৃতি বা দাবি বানাবে না।
+- মূল লেখার বাক্য কপি করবে না।
+- 2 থেকে 4টি ছোট অনুচ্ছেদ লিখবে।
+- রাজনৈতিক সংবাদ হলে সম্পূর্ণ নিরপেক্ষ ভাষা ব্যবহার করবে।
+- কোনো ওয়েবসাইটের নাম লিখবে না।
+- source URL লিখবে না।
+
+শুধু JSON দেবে:
+{{
+  "title": "নতুন বাংলা শিরোনাম",
+  "summary": "নতুনভাবে লেখা সংবাদ"
+}}
+"""
+
+    payload = {
+        "model": MODEL,
+        "input": prompt,
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "dop_news_article",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string"
+                        },
+                        "summary": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "title",
+                        "summary"
+                    ],
+                    "additionalProperties": False
+                }
+            }
+        }
+    }
+
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=90
+        )
+
+        print("OpenAI status:", response.status_code)
+
+        if response.status_code != 200:
+            print("OPENAI ERROR:")
+            print(response.text[:2000])
+            return None
+
+        result = response.json()
+
+        output_text = ""
+
+        for output in result.get("output", []):
+            if output.get("type") == "message":
+                for content in output.get("content", []):
+                    if content.get("type") == "output_text":
+                        output_text += content.get("text", "")
+
+        if not output_text:
+            print("OpenAI returned no text.")
+            return None
+
+        parsed = json.loads(output_text)
+
+        if not parsed.get("title") or not parsed.get("summary"):
+            return None
+
+        return parsed
+
+    except Exception as e:
+        print("AI ERROR:", e)
+        return None
+
+
+def fallback_article(title, description):
+    """
+    AI কাজ না করলেও যাতে সংবাদ ওয়েবসাইটে দেখা যায়।
+    """
+
+    description = clean_html(description)
+
+    if not description:
+        description = title
+
+    return {
+        "title": title.strip(),
+        "summary": description.strip()
     }
 
 
-    modalImage.src =
-      safeImage(article.image);
+def get_image(entry):
+    try:
+        media = entry.get("media_content")
+
+        if media and isinstance(media, list):
+            for item in media:
+                if item.get("url"):
+                    return item["url"]
+
+        thumbnail = entry.get("media_thumbnail")
+
+        if thumbnail and isinstance(thumbnail, list):
+            if thumbnail[0].get("url"):
+                return thumbnail[0]["url"]
+
+    except Exception:
+        pass
+
+    return "https://picsum.photos/800/450"
 
 
-    modalImage.onerror =
-      function () {
+def main():
 
-        this.onerror = null;
+    print("====================================")
+    print("DOP NEWS 24 AUTO NEWS STARTED")
+    print("====================================")
 
-        this.src =
-          "https://picsum.photos/900/500";
+    data = load_news()
 
-      };
+    old_articles = data.get("articles", [])
 
+    existing_ids = set()
 
-    modalCategory.textContent =
-      article.category || "";
+    for article in old_articles:
+        if article.get("source_id"):
+            existing_ids.add(article["source_id"])
 
+    new_articles = []
 
-    modalTitle.textContent =
-      article.title ||
-      "শিরোনাম নেই";
+    for category, feed_url in FEEDS.items():
 
+        print("")
+        print("CATEGORY:", category)
 
-    modalSummary.textContent =
-      article.summary ||
-      "";
+        entries = get_rss_items(feed_url)
 
+        if not entries:
+            print("No RSS entries for:", category)
+            continue
 
-    modalDate.textContent =
-      formatDate(
-        article.published_at
-      );
+        category_count = 0
 
+        for entry in entries[:10]:
 
-    modal.classList.add("show");
+            if category_count >= MAX_PER_CATEGORY:
+                break
 
-
-    document.body.style.overflow =
-      "hidden";
-
-  }
-
-
-  function closeModal() {
-
-    modal.classList.remove("show");
-
-    document.body.style.overflow =
-      "";
-
-  }
-
-
-  document
-    .getElementById("closeModal")
-    .addEventListener(
-      "click",
-      closeModal
-    );
-
-
-  modal.addEventListener(
-    "click",
-    function(event) {
-
-      if (event.target === modal) {
-
-        closeModal();
-
-      }
-
-    }
-  );
-
-
-  document.addEventListener(
-    "keydown",
-    function(event) {
-
-      if (event.key === "Escape") {
-
-        closeModal();
-
-      }
-
-    }
-  );
-
-
-  /* =====================================================
-     CATEGORY BUTTONS
-  ===================================================== */
-
-  document
-    .querySelectorAll(
-      ".menu button"
-    )
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        function() {
-
-          document
-            .querySelectorAll(
-              ".menu button"
+            title = clean_html(
+                entry.get("title", "")
             )
-            .forEach(btn =>
-              btn.classList.remove(
-                "active"
-              )
-            );
+
+            description = clean_html(
+                entry.get("summary", "")
+            )
+
+            link = entry.get("link", "")
+
+            if not title:
+                continue
+
+            source_id = make_id(
+                title + "|" + link
+            )
+
+            if source_id in existing_ids:
+                print("Duplicate:", title)
+                continue
+
+            print("Processing:", title)
+
+            # প্রথমে AI দিয়ে লিখবে
+            ai_article = rewrite_with_ai(
+                title,
+                description,
+                category
+            )
+
+            # AI কাজ করলে AI লেখা
+            # না করলে RSS তথ্য দিয়ে fallback
+            if ai_article:
+                article_title = ai_article["title"]
+                article_summary = ai_article["summary"]
+                print("AI article created.")
+            else:
+                fallback = fallback_article(
+                    title,
+                    description
+                )
+
+                article_title = fallback["title"]
+                article_summary = fallback["summary"]
+
+                print("Fallback RSS article created.")
+
+            article = {
+                "id": make_id(
+                    source_id + str(datetime.now())
+                ),
+
+                "source_id": source_id,
+
+                "category": category,
+
+                "title": article_title,
+
+                "summary": article_summary,
+
+                "image": get_image(entry),
+
+                "published_at": datetime.now(
+                    timezone.utc
+                ).isoformat(),
+
+                "source_url": link
+            }
+
+            new_articles.append(article)
+
+            existing_ids.add(source_id)
+
+            category_count += 1
+
+            if len(new_articles) >= MAX_TOTAL:
+                break
+
+        if len(new_articles) >= MAX_TOTAL:
+            break
+
+    print("")
+    print("New articles:", len(new_articles))
+
+    # নতুন সংবাদ সামনে
+    all_articles = new_articles + old_articles
+
+    # সর্বোচ্চ 40টি
+    all_articles = all_articles[:MAX_TOTAL]
+
+    data["articles"] = all_articles
+
+    save_news(data)
+
+    print("")
+    print("====================================")
+    print("DOP NEWS 24 AUTO NEWS FINISHED")
+    print("====================================")
 
 
-          this.classList.add(
-            "active"
-          );
-
-
-          currentCategory =
-            this.dataset.category;
-
-
-          renderNews();
-
-        }
-      );
-
-    });
-
-
-  /* =====================================================
-     START
-  ===================================================== */
-
-  loadNews();
-
-
-  /* প্রতি ৫ মিনিটে আপডেট */
-
-  setInterval(
-    loadNews,
-    5 * 60 * 1000
-  );
-
-</script>
-
-</body>
-</html>
+if __name__ == "__main__":
+    main()
