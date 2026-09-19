@@ -205,7 +205,6 @@ def remove_source_from_title(title):
 
     title = clean_text(title)
 
-    # Remove common "- Source" endings
     pattern = (
         r"\s*[-|–—]\s*"
         r"(?:"
@@ -224,7 +223,6 @@ def remove_source_from_title(title):
         flags=re.I
     )
 
-    # Remove domains at the end
     title = re.sub(
         r"\s*[-|–—]\s*[A-Za-z0-9.-]+\.(?:com|net|org|co\.uk|co\.in)\s*$",
         "",
@@ -252,7 +250,6 @@ def remove_source_references(text):
 
         low = line.lower()
 
-        # Skip obvious source/reference lines
         if (
             "source:" in low
             or "reference:" in low
@@ -261,7 +258,6 @@ def remove_source_references(text):
         ):
             continue
 
-        # Skip lines containing obvious URLs
         if re.search(
             r"https?://|www\.",
             line,
@@ -269,7 +265,6 @@ def remove_source_references(text):
         ):
             continue
 
-        # Skip lines that are only a publisher/domain
         if any(
             word in low
             for word in SOURCE_WORDS
@@ -305,7 +300,7 @@ def get_rss_items(url):
             timeout=30,
             headers={
                 "User-Agent":
-                "Mozilla/5.0 DOP-News-24"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
         )
 
@@ -357,7 +352,6 @@ def extract_rss_image(entry):
     except Exception:
         pass
 
-
     # media_thumbnail
     try:
 
@@ -376,7 +370,6 @@ def extract_rss_image(entry):
 
     except Exception:
         pass
-
 
     # enclosure
     try:
@@ -400,7 +393,6 @@ def extract_rss_image(entry):
     except Exception:
         pass
 
-
     # Image inside RSS HTML
     try:
 
@@ -423,7 +415,6 @@ def extract_rss_image(entry):
     except Exception:
         pass
 
-
     return ""
 
 
@@ -432,51 +423,51 @@ def extract_og_image(url):
     if not url:
         return ""
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9,bn;q=0.8"
+    }
+
     try:
 
         response = requests.get(
             url,
             timeout=15,
-            headers={
-                "User-Agent":
-                "Mozilla/5.0"
-            },
+            headers=headers,
             allow_redirects=True
         )
 
         if response.status_code != 200:
             return ""
 
-        content_type = (
-            response.headers
-            .get("content-type", "")
-            .lower()
-        )
+        page = response.text
 
-        if "text/html" not in content_type:
-            return ""
-
-        page = response.text[:1000000]
-
-        # og:image
+        # og:image (standard)
         match = re.search(
             r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
             page,
             flags=re.I
         )
-
         if match:
-            return match.group(1)
+            return html.unescape(match.group(1))
 
-        # Reverse attribute order
+        # og:image (reversed attributes)
         match = re.search(
             r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
             page,
             flags=re.I
         )
-
         if match:
-            return match.group(1)
+            return html.unescape(match.group(1))
+
+        # twitter:image
+        match = re.search(
+            r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+            page,
+            flags=re.I
+        )
+        if match:
+            return html.unescape(match.group(1))
 
     except Exception as e:
 
@@ -664,17 +655,15 @@ def get_best_image(
     title
 ):
 
-    # First RSS image
+    # 1. RSS Image
     image = extract_rss_image(
         entry
     )
 
     if image and image not in used_images:
-
         return image
 
-
-    # Then article OG image
+    # 2. Extract OG Image from Redirect / Article Link
     if article_url:
 
         og = extract_og_image(
@@ -682,11 +671,9 @@ def get_best_image(
         )
 
         if og and og not in used_images:
-
             return og
 
-
-    # Unique generated visual
+    # 3. Unique SVG Fallback
     return make_unique_visual(
         category,
         title
@@ -965,11 +952,6 @@ def main():
     data = load_news()
 
 
-    # -----------------------------------------------------
-    # IMPORTANT:
-    # পুরোনো ভুল source_url বাদ দেওয়া
-    # -----------------------------------------------------
-
     old_articles = []
 
     for article in data.get(
@@ -986,10 +968,6 @@ def main():
             article
         )
 
-
-    # -----------------------------------------------------
-    # Existing IDs
-    # -----------------------------------------------------
 
     existing_ids = set()
 
@@ -1022,10 +1000,6 @@ def main():
 
     new_articles = []
 
-
-    # -----------------------------------------------------
-    # FEEDS
-    # -----------------------------------------------------
 
     for category, feed_url in FEEDS.items():
 
@@ -1090,8 +1064,6 @@ def main():
             )
 
 
-            # ID uses source internally
-            # but source URL is NEVER saved
             source_id = make_id(
                 clean_title +
                 "|" +
@@ -1115,21 +1087,12 @@ def main():
             )
 
 
-            # ------------------------------------------------
-            # AI
-            # ------------------------------------------------
-
             ai = rewrite_with_ai(
                 clean_title,
                 raw_description,
                 category
             )
 
-
-            # ------------------------------------------------
-            # AI না হলে raw article publish নয়
-            # পরিষ্কার fallback ব্যবহার
-            # ------------------------------------------------
 
             if ai:
 
@@ -1143,7 +1106,6 @@ def main():
 
             else:
 
-                # Raw source text সরাসরি দেখাব না
                 fallback_title = (
                     remove_source_from_title(
                         clean_title
@@ -1178,10 +1140,6 @@ def main():
                 )
 
 
-            # ------------------------------------------------
-            # IMAGE
-            # ------------------------------------------------
-
             image = get_best_image(
                 entry,
                 article_url,
@@ -1195,10 +1153,6 @@ def main():
                 image
             )
 
-
-            # ------------------------------------------------
-            # ARTICLE
-            # ------------------------------------------------
 
             article = {
 
@@ -1257,10 +1211,6 @@ def main():
             break
 
 
-    # =====================================================
-    # SAVE
-    # =====================================================
-
     print("")
     print(
         "New clean articles:",
@@ -1268,21 +1218,17 @@ def main():
     )
 
 
-    # নতুন সংবাদ সামনে
     combined = (
         new_articles +
         old_articles
     )
 
 
-    # Maximum 20
     combined = combined[
         :MAX_TOTAL
     ]
 
 
-    # নিশ্চিত করা:
-    # source_url যেন কোথাও না থাকে
     for article in combined:
 
         article.pop(
