@@ -1,383 +1,1005 @@
-import os
-import json
-import hashlib
-from datetime import datetime, timezone
+<!DOCTYPE html>
+<html lang="bn">
+<head>
 
-import requests
-import feedparser
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+>
+
+<title>DOP NEWS 24</title>
+
+<meta
+name="description"
+content="DOP NEWS 24 - সর্বশেষ বাংলা সংবাদ"
+>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:
+    "Noto Serif Bengali",
+    "Noto Sans Bengali",
+    Arial,
+    sans-serif;
+    background:#f3f4f6;
+    color:#111827;
+}
+
+header{
+    background:#b91c1c;
+    color:white;
+    padding:18px 15px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+
+.header-inner{
+    max-width:1200px;
+    margin:auto;
+}
+
+.logo{
+    font-size:30px;
+    font-weight:900;
+    margin:0;
+}
+
+.subtitle{
+    font-size:13px;
+    opacity:.9;
+    margin-top:2px;
+}
+
+nav{
+    margin-top:15px;
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+}
+
+nav button{
+    border:0;
+    background:rgba(255,255,255,.15);
+    color:white;
+    padding:8px 15px;
+    border-radius:20px;
+    cursor:pointer;
+    white-space:nowrap;
+    font-family:inherit;
+}
+
+nav button.active{
+    background:white;
+    color:#b91c1c;
+    font-weight:bold;
+}
+
+.ticker{
+    background:#111827;
+    color:white;
+    padding:10px 15px;
+    overflow:hidden;
+}
+
+.ticker-inner{
+    max-width:1200px;
+    margin:auto;
+    white-space:nowrap;
+    overflow:hidden;
+}
+
+.container{
+    max-width:1200px;
+    margin:25px auto;
+    padding:0 15px;
+}
+
+.status{
+    background:white;
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:20px;
+    text-align:center;
+    color:#6b7280;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:
+    repeat(auto-fill,minmax(280px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:white;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:
+    0 3px 12px rgba(0,0,0,.08);
+    cursor:pointer;
+    transition:.2s;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+    box-shadow:
+    0 7px 20px rgba(0,0,0,.13);
+}
+
+.card-image{
+    width:100%;
+    height:190px;
+    object-fit:cover;
+    display:block;
+    background:#e5e7eb;
+}
+
+.card-body{
+    padding:16px;
+}
+
+.category{
+    display:inline-block;
+    background:#fee2e2;
+    color:#b91c1c;
+    font-size:12px;
+    padding:4px 9px;
+    border-radius:15px;
+    margin-bottom:9px;
+}
+
+.card-title{
+    font-size:19px;
+    line-height:1.55;
+    margin:0 0 9px;
+    font-weight:800;
+}
+
+.card-summary{
+    color:#4b5563;
+    line-height:1.7;
+    font-size:14px;
+
+    display:-webkit-box;
+    -webkit-line-clamp:4;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+}
+
+.date{
+    margin-top:12px;
+    color:#9ca3af;
+    font-size:12px;
+}
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.7);
+    z-index:100;
+    overflow-y:auto;
+    padding:20px;
+}
+
+.modal-box{
+    max-width:850px;
+    margin:30px auto;
+    background:white;
+    border-radius:16px;
+    overflow:hidden;
+}
+
+.modal-image{
+    width:100%;
+    max-height:450px;
+    object-fit:cover;
+}
+
+.modal-content{
+    padding:25px;
+}
+
+.modal-title{
+    font-size:29px;
+    line-height:1.5;
+    margin:0 0 12px;
+}
+
+.modal-date{
+    color:#9ca3af;
+    font-size:13px;
+    margin-bottom:20px;
+}
+
+.article-text{
+    font-size:18px;
+    line-height:2;
+    color:#1f2937;
+}
+
+.article-text p{
+    margin:0 0 20px;
+}
+
+.close{
+    position:fixed;
+    right:20px;
+    top:15px;
+    background:#b91c1c;
+    color:white;
+    border:0;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    font-size:25px;
+    cursor:pointer;
+}
+
+footer{
+    text-align:center;
+    padding:35px 15px;
+    color:#6b7280;
+}
+
+@media(max-width:600px){
+
+    .logo{
+        font-size:25px;
+    }
+
+    .card-image{
+        height:180px;
+    }
+
+    .modal{
+        padding:8px;
+    }
+
+    .modal-box{
+        margin:20px auto;
+    }
+
+    .modal-content{
+        padding:18px;
+    }
+
+    .modal-title{
+        font-size:23px;
+    }
+
+    .article-text{
+        font-size:17px;
+        line-height:1.9;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="header-inner">
+
+<h1 class="logo">
+DOP NEWS 24
+</h1>
+
+<div class="subtitle">
+সত্য ও তথ্যভিত্তিক বাংলা সংবাদ
+</div>
+
+<nav>
+
+<button
+class="active"
+data-category="সব">
+সব
+</button>
+
+<button
+data-category="বাংলাদেশ">
+বাংলাদেশ
+</button>
+
+<button
+data-category="বিশ্ব">
+বিশ্ব
+</button>
+
+<button
+data-category="খেলা">
+খেলা
+</button>
+
+<button
+data-category="প্রযুক্তি">
+প্রযুক্তি
+</button>
+
+</nav>
+
+</div>
+
+</header>
 
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-MODEL = "gpt-5.6-luna"
+<div class="ticker">
 
-NEWS_FILE = "news.json"
+<div class="ticker-inner">
 
-MAX_PER_CATEGORY = 5
-MAX_TOTAL = 40
+<span id="tickerText">
+সর্বশেষ সংবাদ লোড হচ্ছে...
+</span>
+
+</div>
+
+</div>
 
 
-FEEDS = {
-    "বাংলাদেশ": "https://news.google.com/rss/search?q=Bangladesh&hl=bn&gl=BD&ceid=BD:bn",
-    "বিশ্ব": "https://news.google.com/rss/search?q=World+News&hl=en-US&gl=US&ceid=US:en",
-    "খেলা": "https://news.google.com/rss/search?q=Sports&hl=en-US&gl=US&ceid=US:en",
-    "প্রযুক্তি": "https://news.google.com/rss/search?q=Technology&hl=en-US&gl=US&ceid=US:en",
+<main class="container">
+
+<div
+id="status"
+class="status">
+সংবাদ লোড হচ্ছে...
+</div>
+
+<div
+id="newsGrid"
+class="grid">
+</div>
+
+</main>
+
+
+<footer>
+
+© 2026 DOP NEWS 24
+
+</footer>
+
+
+<!-- MODAL -->
+
+<div
+id="modal"
+class="modal">
+
+<button
+class="close"
+onclick="closeModal()">
+×
+</button>
+
+<div class="modal-box">
+
+<img
+id="modalImage"
+class="modal-image"
+src=""
+alt=""
+>
+
+<div class="modal-content">
+
+<div
+id="modalCategory"
+class="category">
+</div>
+
+<h2
+id="modalTitle"
+class="modal-title">
+</h2>
+
+<div
+id="modalDate"
+class="modal-date">
+</div>
+
+<div
+id="modalText"
+class="article-text">
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+let allNews = [];
+
+let currentCategory = "সব";
+
+
+/* --------------------------------
+   LOAD NEWS
+-------------------------------- */
+
+async function loadNews(){
+
+    const status =
+    document.getElementById("status");
+
+    try{
+
+        const response =
+        await fetch(
+            "./news.json?cache=" +
+            Date.now()
+        );
+
+        if(!response.ok){
+
+            throw new Error(
+                "news.json পাওয়া যায়নি"
+            );
+
+        }
+
+        const data =
+        await response.json();
+
+        allNews =
+        Array.isArray(data.articles)
+        ? data.articles
+        : [];
+
+
+        if(allNews.length === 0){
+
+            status.innerText =
+            "এখনো কোনো সংবাদ প্রকাশিত হয়নি।";
+
+            return;
+
+        }
+
+
+        status.innerText =
+        allNews.length +
+        "টি সংবাদ পাওয়া গেছে";
+
+
+        renderNews();
+
+        updateTicker();
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        status.innerText =
+        "সংবাদ লোড করতে সমস্যা হয়েছে।";
+
+    }
+
 }
 
 
-def load_news():
-    if not os.path.exists(NEWS_FILE):
-        return {
-            "updated_at": "",
-            "articles": []
+/* --------------------------------
+   IMAGE FALLBACK
+-------------------------------- */
+
+function fallbackImage(category){
+
+    const configs = {
+
+        "বাংলাদেশ":{
+            icon:"🇧🇩",
+            text:"বাংলাদেশ"
+        },
+
+        "বিশ্ব":{
+            icon:"🌍",
+            text:"বিশ্ব সংবাদ"
+        },
+
+        "খেলা":{
+            icon:"🏆",
+            text:"খেলা"
+        },
+
+        "প্রযুক্তি":{
+            icon:"💻",
+            text:"প্রযুক্তি"
         }
 
-    try:
-        with open(NEWS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        if not isinstance(data, dict):
-            return {"updated_at": "", "articles": []}
-
-        if "articles" not in data:
-            data["articles"] = []
-
-        return data
-
-    except Exception as e:
-        print("news.json read error:", e)
-        return {
-            "updated_at": "",
-            "articles": []
-        }
+    };
 
 
-def save_news(data):
-    data["updated_at"] = datetime.now(timezone.utc).isoformat()
-
-    with open(NEWS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-    print("news.json saved successfully.")
-    print("Total articles:", len(data.get("articles", [])))
+    const item =
+    configs[category]
+    || {
+        icon:"📰",
+        text:"DOP NEWS 24"
+    };
 
 
-def make_id(text):
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+    const svg = `
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="900"
+        height="500"
+        viewBox="0 0 900 500"
+    >
+
+        <rect
+            width="900"
+            height="500"
+            fill="#991b1b"
+        />
+
+        <circle
+            cx="760"
+            cy="80"
+            r="220"
+            fill="#b91c1c"
+        />
+
+        <circle
+            cx="100"
+            cy="450"
+            r="250"
+            fill="#7f1d1d"
+        />
+
+        <text
+            x="450"
+            y="230"
+            text-anchor="middle"
+            font-size="110"
+        >
+            ${item.icon}
+        </text>
+
+        <text
+            x="450"
+            y="350"
+            text-anchor="middle"
+            fill="white"
+            font-size="48"
+            font-family="Arial"
+            font-weight="bold"
+        >
+            ${item.text}
+        </text>
+
+        <text
+            x="450"
+            y="410"
+            text-anchor="middle"
+            fill="white"
+            font-size="25"
+            font-family="Arial"
+        >
+            DOP NEWS 24
+        </text>
+
+    </svg>
+    `;
 
 
-def clean_html(text):
-    if not text:
-        return ""
+    return "data:image/svg+xml;charset=UTF-8," +
+        encodeURIComponent(svg);
 
-    import re
-
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"\s+", " ", text)
-
-    return text.strip()
+}
 
 
-def get_rss_items(url):
-    print("Reading RSS:", url)
+/* --------------------------------
+   GET IMAGE
+-------------------------------- */
 
-    try:
-        response = requests.get(
-            url,
-            timeout=30,
-            headers={
-                "User-Agent": "Mozilla/5.0 DOP-News-24"
-            }
-        )
+function getImage(article){
 
-        response.raise_for_status()
+    if(
+        article.image &&
+        article.image.trim() !== ""
+    ){
 
-        feed = feedparser.parse(response.content)
+        return article.image;
 
-        print("RSS items found:", len(feed.entries))
-
-        return feed.entries
-
-    except Exception as e:
-        print("RSS ERROR:", e)
-        return []
-
-
-def rewrite_with_ai(title, description, category):
-    if not OPENAI_API_KEY:
-        print("OPENAI_API_KEY not found.")
-        return None
-
-    prompt = f"""
-তুমি DOP NEWS 24-এর বাংলা সংবাদ সম্পাদক।
-
-ক্যাটাগরি: {category}
-
-মূল সংবাদ শিরোনাম:
-{title}
-
-RSS থেকে পাওয়া সংক্ষিপ্ত তথ্য:
-{description}
-
-নির্দেশনা:
-- বাংলায় নতুন করে সংবাদটি লিখবে।
-- তথ্যের বাইরে কোনো ঘটনা, সংখ্যা, নাম, উদ্ধৃতি বা দাবি বানাবে না।
-- মূল লেখার বাক্য কপি করবে না।
-- 2 থেকে 4টি ছোট অনুচ্ছেদ লিখবে।
-- রাজনৈতিক সংবাদ হলে সম্পূর্ণ নিরপেক্ষ ভাষা ব্যবহার করবে।
-- কোনো ওয়েবসাইটের নাম লিখবে না।
-- source URL লিখবে না।
-
-শুধু JSON দেবে:
-{{
-  "title": "নতুন বাংলা শিরোনাম",
-  "summary": "নতুনভাবে লেখা সংবাদ"
-}}
-"""
-
-    payload = {
-        "model": MODEL,
-        "input": prompt,
-        "text": {
-            "format": {
-                "type": "json_schema",
-                "name": "dop_news_article",
-                "strict": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "title": {
-                            "type": "string"
-                        },
-                        "summary": {
-                            "type": "string"
-                        }
-                    },
-                    "required": [
-                        "title",
-                        "summary"
-                    ],
-                    "additionalProperties": False
-                }
-            }
-        }
     }
 
-    try:
-        response = requests.post(
-            "https://api.openai.com/v1/responses",
-            headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json=payload,
-            timeout=90
-        )
+    return fallbackImage(
+        article.category
+    );
 
-        print("OpenAI status:", response.status_code)
-
-        if response.status_code != 200:
-            print("OPENAI ERROR:")
-            print(response.text[:2000])
-            return None
-
-        result = response.json()
-
-        output_text = ""
-
-        for output in result.get("output", []):
-            if output.get("type") == "message":
-                for content in output.get("content", []):
-                    if content.get("type") == "output_text":
-                        output_text += content.get("text", "")
-
-        if not output_text:
-            print("OpenAI returned no text.")
-            return None
-
-        parsed = json.loads(output_text)
-
-        if not parsed.get("title") or not parsed.get("summary"):
-            return None
-
-        return parsed
-
-    except Exception as e:
-        print("AI ERROR:", e)
-        return None
+}
 
 
-def fallback_article(title, description):
-    """
-    AI কাজ না করলেও যাতে সংবাদ ওয়েবসাইটে দেখা যায়।
-    """
+/* --------------------------------
+   RENDER
+-------------------------------- */
 
-    description = clean_html(description)
+function renderNews(){
 
-    if not description:
-        description = title
+    const grid =
+    document.getElementById(
+        "newsGrid"
+    );
 
-    return {
-        "title": title.strip(),
-        "summary": description.strip()
+
+    let news =
+    allNews;
+
+
+    if(currentCategory !== "সব"){
+
+        news =
+        allNews.filter(
+            item =>
+            item.category ===
+            currentCategory
+        );
+
     }
 
 
-def get_image(entry):
-    try:
-        media = entry.get("media_content")
-
-        if media and isinstance(media, list):
-            for item in media:
-                if item.get("url"):
-                    return item["url"]
-
-        thumbnail = entry.get("media_thumbnail")
-
-        if thumbnail and isinstance(thumbnail, list):
-            if thumbnail[0].get("url"):
-                return thumbnail[0]["url"]
-
-    except Exception:
-        pass
-
-    return "https://picsum.photos/800/450"
+    grid.innerHTML = "";
 
 
-def main():
+    if(news.length === 0){
 
-    print("====================================")
-    print("DOP NEWS 24 AUTO NEWS STARTED")
-    print("====================================")
+        grid.innerHTML = `
+            <div class="status">
+                এই বিভাগে কোনো সংবাদ নেই।
+            </div>
+        `;
 
-    data = load_news()
+        return;
 
-    old_articles = data.get("articles", [])
+    }
 
-    existing_ids = set()
 
-    for article in old_articles:
-        if article.get("source_id"):
-            existing_ids.add(article["source_id"])
+    news.forEach(
+        (article,index) => {
 
-    new_articles = []
+            const card =
+            document.createElement(
+                "article"
+            );
 
-    for category, feed_url in FEEDS.items():
+            card.className =
+            "card";
 
-        print("")
-        print("CATEGORY:", category)
 
-        entries = get_rss_items(feed_url)
+            const image =
+            getImage(article);
 
-        if not entries:
-            print("No RSS entries for:", category)
-            continue
 
-        category_count = 0
+            card.innerHTML = `
 
-        for entry in entries[:10]:
+                <img
+                    class="card-image"
+                    src="${escapeHtml(image)}"
+                    alt=""
+                    onerror="
+                        this.onerror=null;
+                        this.src=fallbackImage(
+                            '${escapeJs(article.category)}'
+                        );
+                    "
+                >
 
-            if category_count >= MAX_PER_CATEGORY:
-                break
+                <div class="card-body">
 
-            title = clean_html(
-                entry.get("title", "")
+                    <span class="category">
+                        ${escapeHtml(
+                            article.category || "সংবাদ"
+                        )}
+                    </span>
+
+                    <h2 class="card-title">
+                        ${escapeHtml(
+                            article.title || ""
+                        )}
+                    </h2>
+
+                    <div class="card-summary">
+                        ${escapeHtml(
+                            article.summary || ""
+                        )}
+                    </div>
+
+                    <div class="date">
+                        ${formatDate(
+                            article.published_at
+                        )}
+                    </div>
+
+                </div>
+
+            `;
+
+
+            card.onclick =
+            () => openModal(article);
+
+
+            grid.appendChild(card);
+
+        }
+    );
+
+}
+
+
+/* --------------------------------
+   MODAL
+-------------------------------- */
+
+function openModal(article){
+
+    const modal =
+    document.getElementById(
+        "modal"
+    );
+
+
+    document.getElementById(
+        "modalImage"
+    ).src =
+    getImage(article);
+
+
+    document.getElementById(
+        "modalCategory"
+    ).innerText =
+    article.category || "সংবাদ";
+
+
+    document.getElementById(
+        "modalTitle"
+    ).innerText =
+    article.title || "";
+
+
+    document.getElementById(
+        "modalDate"
+    ).innerText =
+    formatDate(
+        article.published_at
+    );
+
+
+    const text =
+    article.summary || "";
+
+
+    const paragraphs =
+    text
+    .split(/\n+/)
+    .filter(Boolean);
+
+
+    document.getElementById(
+        "modalText"
+    ).innerHTML =
+    paragraphs
+    .map(
+        p =>
+        `<p>${escapeHtml(p)}</p>`
+    )
+    .join("");
+
+
+    modal.style.display =
+    "block";
+
+
+    document.body.style.overflow =
+    "hidden";
+
+}
+
+
+function closeModal(){
+
+    document.getElementById(
+        "modal"
+    ).style.display =
+    "none";
+
+
+    document.body.style.overflow =
+    "";
+
+}
+
+
+/* --------------------------------
+   TICKER
+-------------------------------- */
+
+function updateTicker(){
+
+    if(!allNews.length){
+
+        return;
+
+    }
+
+
+    const titles =
+    allNews
+    .slice(0,8)
+    .map(
+        item =>
+        item.title
+    )
+    .join(
+        "  •  "
+    );
+
+
+    document.getElementById(
+        "tickerText"
+    ).innerText =
+    titles;
+
+}
+
+
+/* --------------------------------
+   DATE
+-------------------------------- */
+
+function formatDate(value){
+
+    if(!value){
+
+        return "";
+
+    }
+
+
+    try{
+
+        return new Date(
+            value
+        ).toLocaleString(
+            "bn-BD",
+            {
+                year:"numeric",
+                month:"long",
+                day:"numeric",
+                hour:"numeric",
+                minute:"2-digit"
+            }
+        );
+
+    }
+
+    catch(e){
+
+        return "";
+
+    }
+
+}
+
+
+/* --------------------------------
+   SECURITY HELPERS
+-------------------------------- */
+
+function escapeHtml(value){
+
+    return String(value || "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+function escapeJs(value){
+
+    return String(value || "")
+        .replace(/\\/g,"\\\\")
+        .replace(/'/g,"\\'");
+}
+
+
+/* --------------------------------
+   CATEGORY BUTTONS
+-------------------------------- */
+
+document
+.querySelectorAll("nav button")
+.forEach(button => {
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            document
+            .querySelectorAll(
+                "nav button"
             )
-
-            description = clean_html(
-                entry.get("summary", "")
-            )
-
-            link = entry.get("link", "")
-
-            if not title:
-                continue
-
-            source_id = make_id(
-                title + "|" + link
-            )
-
-            if source_id in existing_ids:
-                print("Duplicate:", title)
-                continue
-
-            print("Processing:", title)
-
-            # প্রথমে AI দিয়ে লিখবে
-            ai_article = rewrite_with_ai(
-                title,
-                description,
-                category
-            )
-
-            # AI কাজ করলে AI লেখা
-            # না করলে RSS তথ্য দিয়ে fallback
-            if ai_article:
-                article_title = ai_article["title"]
-                article_summary = ai_article["summary"]
-                print("AI article created.")
-            else:
-                fallback = fallback_article(
-                    title,
-                    description
+            .forEach(
+                b =>
+                b.classList.remove(
+                    "active"
                 )
-
-                article_title = fallback["title"]
-                article_summary = fallback["summary"]
-
-                print("Fallback RSS article created.")
-
-            article = {
-                "id": make_id(
-                    source_id + str(datetime.now())
-                ),
-
-                "source_id": source_id,
-
-                "category": category,
-
-                "title": article_title,
-
-                "summary": article_summary,
-
-                "image": get_image(entry),
-
-                "published_at": datetime.now(
-                    timezone.utc
-                ).isoformat(),
-
-                "source_url": link
-            }
-
-            new_articles.append(article)
-
-            existing_ids.add(source_id)
-
-            category_count += 1
-
-            if len(new_articles) >= MAX_TOTAL:
-                break
-
-        if len(new_articles) >= MAX_TOTAL:
-            break
-
-    print("")
-    print("New articles:", len(new_articles))
-
-    # নতুন সংবাদ সামনে
-    all_articles = new_articles + old_articles
-
-    # সর্বোচ্চ 40টি
-    all_articles = all_articles[:MAX_TOTAL]
-
-    data["articles"] = all_articles
-
-    save_news(data)
-
-    print("")
-    print("====================================")
-    print("DOP NEWS 24 AUTO NEWS FINISHED")
-    print("====================================")
+            );
 
 
-if __name__ == "__main__":
-    main()
+            button.classList.add(
+                "active"
+            );
+
+
+            currentCategory =
+            button.dataset.category;
+
+
+            renderNews();
+
+        }
+    );
+
+});
+
+
+/* --------------------------------
+   CLOSE MODAL
+-------------------------------- */
+
+document
+.getElementById("modal")
+.addEventListener(
+    "click",
+    function(e){
+
+        if(e.target === this){
+
+            closeModal();
+
+        }
+
+    }
+);
+
+
+/* --------------------------------
+   START
+-------------------------------- */
+
+loadNews();
+
+
+/* প্রতি 5 মিনিটে নতুন সংবাদ */
+setInterval(
+    loadNews,
+    5 * 60 * 1000
+);
+
+</script>
+
+</body>
+</html>
